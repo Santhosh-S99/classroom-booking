@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Classroom Booking System - Enhanced with Future Classes</title>
+    <title>Classroom Booking System</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -21,12 +21,8 @@
     <div class="container">
         <!-- Header -->
         <header class="header">
-            <h1><i class="fas fa-chalkboard-teacher"></i>Enhanced Classroom Booking</h1>
-            <div class="badges">
-                <span class="firebase-badge"><i class="fab fa-google"></i> Firebase Powered</span>
-                <span class="realtime-badge"><i class="fas fa-bolt"></i> Real-time Updates</span>
-            </div>
-            <p class="header-subtitle">Advanced booking system with future class visibility</p>
+            <h1><i class="fas fa-chalkboard-teacher"></i>Classroom Booking</h1>
+        
         </header>
 
         <!-- Login Section -->
@@ -37,7 +33,7 @@
                         <i class="fas fa-user-graduate"></i>
                     </div>
                     <h2>Teacher Login</h2>
-                    <p>Access the enhanced classroom booking system</p>
+                    <p>Access the classroom booking system</p>
                 </div>
 
                 <form id="teacherLoginForm">
@@ -81,7 +77,6 @@
                 <div class="login-footer">
                     <small>
                         <i class="fas fa-shield-alt"></i>
-                        Secure authentication with Firebase
                     </small>
                 </div>
             </div>
@@ -174,8 +169,8 @@
                         <!-- Subject and Notes -->
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="subject">Subject</label>
-                                <input type="text" id="subject" class="form-input" placeholder="Enter subject name" required>
+                                <label for="subject">Purpose</label>
+                                <input type="text" id="subject" class="form-input" placeholder="Regular class/ Arangetram/ Gejjepooje practice..." required>
                             </div>
                             <div class="form-group">
                                 <label for="notes">Notes (Optional)</label>
@@ -244,8 +239,8 @@
                         <!-- Recurring Subject and Notes -->
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="recurringSubject">Subject</label>
-                                <input type="text" id="recurringSubject" class="form-input" placeholder="Enter subject name" required>
+                                <label for="recurringSubject">Purpose</label>
+                                <input type="text" id="recurringSubject" class="form-input" placeholder="Regular class/ Arangetram/ Gejjepooje practice..." required>
                             </div>
                             <div class="form-group">
                                 <label for="recurringNotes">Notes (Optional)</label>
@@ -342,25 +337,7 @@
                     </div>
 
                     <!-- Enhanced System Status -->
-                    <div class="bookings-card">
-                        <div class="card-header">
-                            <h5>
-                                <i class="fas fa-cog"></i>
-                                System Status
-                            </h5>
-                        </div>
-                        <div class="bookings-list">
-                            <div class="booking-item">
-                                <div class="booking-details">
-                                    <div><i class="fas fa-database"></i> <span class="badge success">Firebase Connected</span></div>
-                                    <div><i class="fas fa-sync-alt"></i> <span class="badge success">Real-time Sync</span></div>
-                                    <div><i class="fas fa-broom"></i> <span class="badge success">Auto-cleanup Active</span></div>
-                                    <div><i class="fas fa-shield-alt"></i> <span class="badge success">Conflict Prevention</span></div>
-                                    <div><i class="fas fa-eye"></i> <span class="badge info">Future Classes View</span></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+
                 </div>
             </div>
         </main>
