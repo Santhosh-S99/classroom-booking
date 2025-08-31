@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Verification - Classroom Booking System</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .verification-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 1.2em;
+        }
+        
+        .test-section {
+            margin-bottom: 40px;
+            padding: 25px;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            background: #f8f9fa;
+        }
+        
+        .test-section h3 {
+            color: #ff6b35;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+        
+        .test-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+        }
+        
+        .test-item i {
+            margin-right: 10px;
+            width: 20px;
+            font-size: 1.2em;
+        }
+        
+        .test-item.success i {
+            color: #28a745;
+        }
+        
+        .test-item.error i {
+            color: #dc3545;
+        }
+        
+        .test-item.pending i {
+            color: #ffc107;
+        }
+        
+        .test-accounts {
+            background: #e8f4fd;
+            border: 2px solid #bee5eb;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .test-accounts h3 {
+            color: #0c5460;
+            margin-bottom: 20px;
+        }
+        
+        .account-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #17a2b8;
+        }
+        
+        .account-item strong {
+            color: #333;
+        }
+        
+        .account-item code {
+            background: #f8f9fa;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .button {
+            background: linear-gradient(135deg, #ff6b35, #f7931e);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.3);
+        }
+        
+        .button.success {
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+        
+        .log-area {
+            background: #333;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .status-indicator.online {
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-indicator.offline {
+            background: #dc3545;
+        }
+        
+        .status-indicator.pending {
+            background: #ffc107;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .alert-danger {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+    <div class="verification-container">
+        <div class="header">
+            <h1><i class="fas fa-check-circle"></i> Setup Verification</h1>
+            <p>Test your Enhanced Classroom Booking System setup</p>
+        </div>
+
+        <div class="test-accounts">
+            <h3><i class="fas fa-users"></i> Test Teacher Accounts</h3>
+            <p>Use these accounts to test your system (create them in Firebase Authentication):</p>
+            
+            <div class="account-item">
+                <strong>Teacher 1:</strong><br>
+                Email: <code>teacher1@school.edu</code><br>
+                Password: <code>TeacherPass123!</code>
+            </div>
+            
+            <div class="account-item">
+                <strong>Teacher 2:</strong><br>
+                Email: <code>teacher2@school.edu</code><br>
+                Password: <code>TeacherPass456!</code>
+            </div>
+            
+            <div class="account-item">
+                <strong>Teacher 3:</strong><br>
+                Email: <code>teacher3@school.edu</code><br>
+                Password: <code>TeacherPass789!</code>
+            </div>
+        </div>
+
+        <div class="alert alert-warning">
+            <strong><i class="fas fa-exclamation-triangle"></i> Important:</strong>
+            Create these accounts in Firebase Authentication console before running tests.
+        </div>
+
+        <div class="test-section">
+            <h3><i class="fas fa-server"></i> Firebase Connection Tests</h3>
+            
+            <div id="firebaseTest" class="test-item pending">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Testing Firebase initialization...</span>
+            </div>
+            
+            <div id="authTest" class="test-item pending">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Testing Authentication service...</span>
+            </div>
+            
+            <div id="firestoreTest" class="test-item pending">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Testing Firestore database...</span>
+            </div>
+            
+            <button class="button" onclick="runFirebaseTests()">
+                <i class="fas fa-play"></i> Run Firebase Tests
+            </button>
+        </div>
+
+        <div class="test-section">
+            <h3><i class="fas fa-user-check"></i> Authentication Tests</h3>
+            
+            <div id="loginTest" class="test-item pending">
+                <i class="fas fa-clock"></i>
+                <span>Ready to test login functionality</span>
+            </div>
+            
+            <div id="logoutTest" class="test-item pending">
+                <i class="fas fa-clock"></i>
+                <span>Ready to test logout functionality</span>
+            </div>
+            
+            <button class="button" onclick="testLogin()">
+                <i class="fas fa-sign-in-alt"></i> Test Login
+            </button>
+            
+            <button class="button" onclick="testLogout()">
+                <i class="fas fa-sign-out-alt"></i> Test Logout
+            </button>
+        </div>
+
+        <div class="test-section">
+            <h3><i class="fas fa-database"></i> Database Operations Tests</h3>
+            
+            <div id="createTest" class="test-item pending">
+                <i class="fas fa-clock"></i>
+                <span>Ready to test booking creation</span>
+            </div>
+            
+            <div id="readTest" class="test-item pending">
+                <i class="fas fa-clock"></i>
+                <span>Ready to test booking reading</span>
+            </div>
+            
+            <div id="conflictTest" class="test-item pending">
+                <i class="fas fa-clock"></i>
+                <span>Ready to test conflict detection</span>
+            </div>
+            
+            <div id="cleanupTest" class="test-item pending">
+                <i class="fas fa-clock"></i>
+                <span>Ready to test auto-cleanup</span>
+            </div>
+            
+            <button class="button" onclick="testDatabaseOperations()">
+                <i class="fas fa-database"></i> Test Database Operations
+            </button>
+        </div>
+
+        <div class="test-section">
+            <h3><i class="fas fa-envelope"></i> Email Notification Test</h3>
+            
+            <div id="emailTest" class="test-item pending">
+                <i class="fas fa-clock"></i>
+                <span>Ready to test email notifications</span>
+            </div>
+            
+            <button class="button" onclick="testEmailNotification()">
+                <i class="fas fa-paper-plane"></i> Test Email Notification
+            </button>
+        </div>
+
+        <div class="test-section">
+            <h3><i class="fas fa-cogs"></i> System Status</h3>
+            
+            <div class="test-item">
+                <i class="fas fa-globe"></i>
+                <span>Browser: <span id="browserInfo"></span></span>
+            </div>
+            
+            <div class="test-item">
+                <i class="fas fa-wifi"></i>
+                <span>Connection: <span class="status-indicator" id="connectionStatus"></span> <span id="connectionText">Checking...</span></span>
+            </div>
+            
+            <div class="test-item">
+                <i class="fas fa-clock"></i>
+                <span>Local Time: <span id="localTime"></span></span>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3><i class="fas fa-tools"></i> Quick Actions</h3>
+            
+            <button class="button success" onclick="openMainSystem()">
+                <i class="fas fa-external-link-alt"></i> Open Main System
+            </button>
+            
+            <button class="button" onclick="clearTestData()">
+                <i class="fas fa-trash-alt"></i> Clear Test Data
+            </button>
+            
+            <button class="button" onclick="downloadLogs()">
+                <i class="fas fa-download"></i> Download Test Logs
+            </button>
+        </div>
+
+        <div id="logOutput" class="log-area" style="display: none;"></div>
+    </div>
+
+    <script>
+        // Load Firebase config
+        let firebaseInitialized = false;
+        let testLogs = [];
+
+        // Initialize system info
+        document.getElementById('browserInfo').textContent = navigator.userAgent.split(')')[0] + ')';
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        function updateTime() {
+            document.getElementById('localTime').textContent = new Date().toLocaleString();
+        }
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${type.toUpperCase()}: ${message}`;
+            testLogs.push(logEntry);
+            
+            const logOutput = document.getElementById('logOutput');
+            if (logOutput.style.display === 'none') {
+                logOutput.style.display = 'block';
+            }
+            logOutput.innerHTML += logEntry + '\n';
+            logOutput.scrollTop = logOutput.scrollHeight;
+            
+            console.log(logEntry);
+        }
+
+        async function runFirebaseTests() {
+            log('Starting Firebase tests...');
+            
+            // Test 1: Firebase Initialization
+            try {
+                if (typeof firebase === 'undefined') {
+                    throw new Error('Firebase SDK not loaded');
+                }
+                
+                // Try to load config
+                if (typeof firebaseConfig === 'undefined') {
+                    throw new Error('Firebase configuration not found. Please ensure firebase-config.js is loaded.');
+                }
+                
+                setTestStatus('firebaseTest', 'success', 'Firebase SDK loaded successfully');
+                log('Firebase SDK loaded successfully');
+                firebaseInitialized = true;
+            } catch (error) {
+                setTestStatus('firebaseTest', 'error', `Firebase SDK error: ${error.message}`);
+                log(`Firebase SDK error: ${error.message}`, 'error');
+                return;
+            }
+
+            // Test 2: Authentication Service
+            try {
+                const auth = firebase.auth();
+                if (auth) {
+                    setTestStatus('authTest', 'success', 'Authentication service initialized');
+                    log('Authentication service initialized');
+                } else {
+                    throw new Error('Authentication service not available');
+                }
+            } catch (error) {
+                setTestStatus('authTest', 'error', `Auth service error: ${error.message}`);
+                log(`Auth service error: ${error.message}`, 'error');
+            }
+
+            // Test 3: Firestore Database
+            try {
+                const db = firebase.firestore();
+                if (db) {
+                    // Try to access Firestore
+                    await db.collection('test').limit(1).get();
+                    setTestStatus('firestoreTest', 'success', 'Firestore database connected');
+                    log('Firestore database connected');
+                    updateConnectionStatus(true);
+                } else {
+                    throw new Error('Firestore service not available');
+                }
+            } catch (error) {
+                setTestStatus('firestoreTest', 'error', `Firestore error: ${error.message}`);
+                log(`Firestore error: ${error.message}`, 'error');
+                updateConnectionStatus(false);
+            }
+        }
+
+        async function testLogin() {
+            if (!firebaseInitialized) {
+                alert('Please run Firebase tests first');
+                return;
+            }
+
+            log('Testing login functionality...');
+            
+            try {
+                const auth = firebase.auth();
+                
+                // Test with first test account
+                await auth.signInWithEmailAndPassword('teacher1@school.edu', 'TeacherPass123!');
+                
+                setTestStatus('loginTest', 'success', 'Login test successful');
+                log('Login test successful with teacher1@school.edu');
+                
+            } catch (error) {
+                setTestStatus('loginTest', 'error', `Login failed: ${error.message}`);
+                log(`Login failed: ${error.message}`, 'error');
+                
+                if (error.code === 'auth/user-not-found') {
+                    log('Please create the test accounts in Firebase Authentication console', 'warning');
+                }
+            }
+        }
+
+        async function testLogout() {
+            if (!firebaseInitialized) {
+                alert('Please run Firebase tests first');
+                return;
+            }
+
+            log('Testing logout functionality...');
+            
+            try {
+                const auth = firebase.auth();
+                await auth.signOut();
+                
+                setTestStatus('logoutTest', 'success', 'Logout test successful');
+                log('Logout test successful');
+                
+            } catch (error) {
+                setTestStatus('logoutTest', 'error', `Logout failed: ${error.message}`);
+                log(`Logout failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testDatabaseOperations() {
+            if (!firebaseInitialized) {
+                alert('Please run Firebase tests first');
+                return;
+            }
+
+            log('Testing database operations...');
+
+            try {
+                const db = firebase.firestore();
+                const auth = firebase.auth();
+
+                // Ensure user is logged in
+                if (!auth.currentUser) {
+                    await auth.signInWithEmailAndPassword('teacher1@school.edu', 'TeacherPass123!');
+                }
+
+                // Test 1: Create booking
+                const testBooking = {
+                    teacherId: auth.currentUser.uid,
+                    teacherEmail: auth.currentUser.email,
+                    teacherName: 'Test Teacher',
+                    subject: 'Test Subject',
+                    date: new Date().toISOString().split('T')[0],
+                    time: '10:00-11:00',
+                    classroom: 'Test Classroom',
+                    notes: 'Test booking for verification',
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    type: 'one-time'
+                };
+
+                const docRef = await db.collection('bookings').add(testBooking);
+                setTestStatus('createTest', 'success', 'Booking creation successful');
+                log(`Test booking created with ID: ${docRef.id}`);
+
+                // Test 2: Read booking
+                const doc = await docRef.get();
+                if (doc.exists) {
+                    setTestStatus('readTest', 'success', 'Booking reading successful');
+                    log('Test booking read successfully');
+                } else {
+                    throw new Error('Created booking not found');
+                }
+
+                // Test 3: Conflict detection (create conflicting booking)
+                try {
+                    await db.collection('bookings').add(testBooking);
+                    setTestStatus('conflictTest', 'error', 'Conflict detection failed - duplicate booking created');
+                    log('Conflict detection test failed - duplicate booking was allowed', 'error');
+                } catch (conflictError) {
+                    setTestStatus('conflictTest', 'success', 'Conflict detection working (this is expected)');
+                    log('Conflict detection test successful - system prevented duplicate booking');
+                }
+
+                // Test 4: Cleanup test (create expired booking)
+                const expiredBooking = {
+                    ...testBooking,
+                    date: '2023-01-01', // Past date
+                    time: '09:00-10:00'
+                };
+
+                const expiredRef = await db.collection('bookings').add(expiredBooking);
+                setTestStatus('cleanupTest', 'success', 'Auto-cleanup test setup complete');
+                log('Test expired booking created for cleanup test');
+
+                // Clean up test data
+                await docRef.delete();
+                await expiredRef.delete();
+                log('Test bookings cleaned up');
+
+            } catch (error) {
+                log(`Database operations test failed: ${error.message}`, 'error');
+                setTestStatus('createTest', 'error', `Database error: ${error.message}`);
+            }
+        }
+
+        async function testEmailNotification() {
+            log('Testing email notification...');
+            
+            if (typeof Email === 'undefined') {
+                setTestStatus('emailTest', 'error', 'SMTP.js not loaded');
+                log('SMTP.js library not found', 'error');
+                return;
+            }
+
+            try {
+                // Check if email config is available
+                if (typeof emailConfig === 'undefined') {
+                    throw new Error('Email configuration not found');
+                }
+
+                // Test email notification
+                const result = await Email.send({
+                    Host: "smtp.gmail.com",
+                    Username: emailConfig.Username,
+                    Password: emailConfig.Password,
+                    Port: 587,
+                    To: emailConfig.Username, // Send to self for testing
+                    From: emailConfig.Username,
+                    Subject: "🧪 Classroom Booking System - Email Test",
+                    Body: `
+                        This is a test email from your Enhanced Classroom Booking System.
+                        
+                        If you received this email, your email notifications are working correctly!
+                        
+                        Test performed at: ${new Date().toLocaleString()}
+                        
+                        ---
+                        Enhanced Classroom Booking System
+                        Email Verification Test
+                    `
+                });
+
+                if (result === "OK") {
+                    setTestStatus('emailTest', 'success', 'Email test successful');
+                    log('Email notification test successful');
+                } else {
+                    throw new Error(`Email send failed: ${result}`);
+                }
+
+            } catch (error) {
+                setTestStatus('emailTest', 'error', `Email test failed: ${error.message}`);
+                log(`Email test failed: ${error.message}`, 'error');
+                
+                if (error.message.includes('authentication')) {
+                    log('Please check your Gmail app password configuration', 'warning');
+                }
+            }
+        }
+
+        function setTestStatus(elementId, status, message) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+
+            element.className = `test-item ${status}`;
+            
+            let icon = '';
+            switch (status) {
+                case 'success':
+                    icon = 'fas fa-check-circle';
+                    break;
+                case 'error':
+                    icon = 'fas fa-exclamation-circle';
+                    break;
+                case 'pending':
+                    icon = 'fas fa-clock';
+                    break;
+            }
+
+            element.innerHTML = `<i class="${icon}"></i><span>${message}</span>`;
+        }
+
+        function updateConnectionStatus(connected) {
+            const statusElement = document.getElementById('connectionStatus');
+            const textElement = document.getElementById('connectionText');
+
+            if (connected) {
+                statusElement.className = 'status-indicator online';
+                textElement.textContent = 'Connected';
+            } else {
+                statusElement.className = 'status-indicator offline';
+                textElement.textContent = 'Disconnected';
+            }
+        }
+
+        function openMainSystem() {
+            window.open('index.html', '_blank');
+        }
+
+        async function clearTestData() {
+            if (!confirm('Are you sure you want to clear all test data?')) {
+                return;
+            }
+
+            log('Clearing test data...');
+            
+            try {
+                const db = firebase.firestore();
+                const auth = firebase.auth();
+
+                if (auth.currentUser) {
+                    // Clear test bookings
+                    const testBookings = await db.collection('bookings')
+                        .where('notes', '==', 'Test booking for verification')
+                        .get();
+
+                    const deletePromises = [];
+                    testBookings.forEach(doc => {
+                        deletePromises.push(doc.ref.delete());
+                    });
+
+                    await Promise.all(deletePromises);
+                    log(`Cleared ${deletePromises.length} test bookings`);
+                }
+
+                log('Test data cleared successfully');
+
+            } catch (error) {
+                log(`Failed to clear test data: ${error.message}`, 'error');
+            }
+        }
+
+        function downloadLogs() {
+            const logContent = testLogs.join('\n');
+            const blob = new Blob([logContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `classroom-booking-test-logs-${new Date().toISOString().split('T')[0]}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            log('Test logs downloaded');
+        }
+
+        // Check network status
+        window.addEventListener('online', () => {
+            updateConnectionStatus(true);
+            log('Network connection restored');
+        });
+
+        window.addEventListener('offline', () => {
+            updateConnectionStatus(false);
+            log('Network connection lost');
+        });
+
+        // Initial connection check
+        updateConnectionStatus(navigator.onLine);
+
+        // Auto-run Firebase tests when page loads
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                log('Verification page loaded - ready for testing');
+                
+                // Try to load Firebase config
+                const script = document.createElement('script');
+                script.src = 'firebase-config.js';
+                script.onload = () => {
+                    log('Firebase configuration loaded');
+                    runFirebaseTests();
+                };
+                script.onerror = () => {
+                    log('Failed to load firebase-config.js - please ensure the file exists', 'error');
+                    setTestStatus('firebaseTest', 'error', 'firebase-config.js not found');
+                };
+                document.head.appendChild(script);
+                
+            }, 1000);
+        });
+
+        // Add SMTP.js
+        const smtpScript = document.createElement('script');
+        smtpScript.src = 'https://smtpjs.com/v3/smtp.js';
+        smtpScript.onload = () => {
+            log('SMTP.js library loaded for email testing');
+        };
+        document.head.appendChild(smtpScript);
+    </script>
+</body>
+</html>

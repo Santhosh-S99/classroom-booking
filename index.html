@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classroom Booking System - Enhanced</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://smtpjs.com/v3/smtp.js"></script>
+</head>
+<body>
+    <!-- Real-time Connection Indicator -->
+    <div id="connectionStatus" class="realtime-indicator connecting">
+        <i class="fas fa-wifi"></i>
+        <span>Connecting...</span>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1><i class="fas fa-chalkboard-teacher"></i>Enhanced Classroom Booking</h1>
+            <div class="badges">
+                <span class="firebase-badge"><i class="fab fa-google"></i> Firebase Powered</span>
+                <span class="realtime-badge"><i class="fas fa-bolt"></i> Real-time Updates</span>
+            </div>
+            <p class="header-subtitle">Advanced booking system with conflict detection and auto-cleanup</p>
+        </header>
+
+        <!-- Login Section -->
+        <section id="loginSection" class="login-section">
+            <div class="login-container">
+                <div class="login-header">
+                    <div class="login-icon">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <h2>Teacher Login</h2>
+                    <p>Access the enhanced classroom booking system</p>
+                </div>
+
+                <form id="teacherLoginForm">
+                    <div class="form-group">
+                        <label for="teacherEmail">
+                            <i class="fas fa-envelope"></i>
+                            Email Address
+                        </label>
+                        <input type="email" 
+                               id="teacherEmail" 
+                               class="form-input" 
+                               placeholder="Enter your email" 
+                               required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="teacherPassword">
+                            <i class="fas fa-lock"></i>
+                            Password
+                        </label>
+                        <div class="password-input-group">
+                            <input type="password" 
+                                   id="teacherPassword" 
+                                   class="form-input" 
+                                   placeholder="Enter your password" 
+                                   required>
+                            <button type="button" 
+                                    id="togglePassword" 
+                                    class="password-toggle">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-login">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Login to System
+                    </button>
+                </form>
+
+                <div class="login-footer">
+                    <small>
+                        <i class="fas fa-shield-alt"></i>
+                        Secure authentication with Firebase
+                    </small>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Booking System -->
+        <main id="bookingSystem" class="booking-system" style="display: none;">
+            <!-- User Info Bar -->
+            <div class="user-info-bar">
+                <div class="user-details">
+                    <i class="fas fa-user-circle user-avatar"></i>
+                    <div class="user-text">
+                        <h5 id="currentUserName">Teacher Name</h5>
+                        <small id="currentUserEmail">teacher@school.edu</small>
+                    </div>
+                </div>
+                <button id="logoutButton" class="btn-logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </button>
+            </div>
+
+            <div class="form-row">
+                <!-- Main Booking Form -->
+                <div class="booking-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-calendar-plus"></i>Book a Classroom</h3>
+                    </div>
+
+                    <!-- Booking Type Selector -->
+                    <div class="booking-type-selector">
+                        <div class="booking-type-tabs">
+                            <button class="booking-tab active" data-type="one-time">
+                                <i class="fas fa-calendar-day"></i>
+                                One-time Booking
+                            </button>
+                            <button class="booking-tab" data-type="recurring">
+                                <i class="fas fa-calendar-week"></i>
+                                Weekly Recurring
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- One-time Booking Section -->
+                    <div id="oneTimeBooking" class="booking-section">
+                        <!-- Calendar Widget -->
+                        <div class="calendar-widget">
+                            <div class="calendar-header">
+                                <button id="prevMonthButton" class="btn-nav">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <h4 id="currentMonthDisplay">August 2025</h4>
+                                <button id="nextMonthButton" class="btn-nav">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                            <div id="calendarGrid" class="calendar-grid"></div>
+                        </div>
+
+                        <!-- Time Slots -->
+                        <div class="time-slots-section">
+                            <h5><i class="fas fa-clock"></i>Available Time Slots</h5>
+                            <div class="slots-legend">
+                                <div class="legend-item">
+                                    <div class="legend-dot available"></div>
+                                    <span>Available</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-dot booked"></div>
+                                    <span>Booked</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-dot selected"></div>
+                                    <span>Selected</span>
+                                </div>
+                            </div>
+                            <div id="timeSlotsGrid" class="time-slots-grid">
+                                <p class="loading-bookings">Please select a date first.</p>
+                            </div>
+                        </div>
+
+                        <!-- Classroom Selection -->
+                        <div class="classroom-selection-section">
+                            <h5><i class="fas fa-door-open"></i>Select Classroom</h5>
+                            <div id="classroomTiles" class="classroom-tiles">
+                                <p class="loading-bookings">Please select date and time first.</p>
+                            </div>
+                        </div>
+
+                        <!-- Subject and Notes -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="subject">Subject</label>
+                                <input type="text" id="subject" class="form-input" placeholder="Enter subject name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="notes">Notes (Optional)</label>
+                                <input type="text" id="notes" class="form-input" placeholder="Additional notes">
+                            </div>
+                        </div>
+
+                        <!-- Booking Confirmation -->
+                        <div class="booking-confirmation">
+                            <div id="selectedDetails" class="selected-details">
+                                <p>Select date, time, and classroom to confirm booking</p>
+                            </div>
+                            <button id="confirmBookingButton" class="btn-confirm" disabled>
+                                <i class="fas fa-check"></i>
+                                Confirm Booking
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Recurring Booking Section -->
+                    <div id="recurringBooking" class="booking-section" style="display: none;">
+                        <!-- Recurring Info Alert -->
+                        <div class="recurring-info">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                <strong>Weekly Recurring Booking:</strong> This will book the same classroom for the same time slot every week for 1 year (52 weeks). You can cancel individual classes as needed.
+                            </div>
+                        </div>
+
+                        <!-- Day Selection -->
+                        <div class="day-selection-section">
+                            <h5><i class="fas fa-calendar-week"></i>Select Day of Week</h5>
+                            <div id="dayTiles" class="day-tiles"></div>
+                        </div>
+
+                        <!-- Recurring Time Slots -->
+                        <div class="time-slots-section">
+                            <h5><i class="fas fa-clock"></i>Available Time Slots</h5>
+                            <div class="slots-legend">
+                                <div class="legend-item">
+                                    <div class="legend-dot available"></div>
+                                    <span>Available</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-dot booked"></div>
+                                    <span>Booked</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-dot selected"></div>
+                                    <span>Selected</span>
+                                </div>
+                            </div>
+                            <div id="recurringTimeSlots" class="time-slots-grid">
+                                <p class="loading-bookings">Please select a day first.</p>
+                            </div>
+                        </div>
+
+                        <!-- Recurring Classroom Selection -->
+                        <div class="classroom-selection-section">
+                            <h5><i class="fas fa-door-open"></i>Select Classroom</h5>
+                            <div id="recurringClassroomTiles" class="classroom-tiles">
+                                <p class="loading-bookings">Please select day and time first.</p>
+                            </div>
+                        </div>
+
+                        <!-- Recurring Subject and Notes -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="recurringSubject">Subject</label>
+                                <input type="text" id="recurringSubject" class="form-input" placeholder="Enter subject name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="recurringNotes">Notes (Optional)</label>
+                                <input type="text" id="recurringNotes" class="form-input" placeholder="Additional notes">
+                            </div>
+                        </div>
+
+                        <!-- Recurring Booking Confirmation -->
+                        <div class="booking-confirmation">
+                            <div id="selectedRecurringDetails" class="selected-details">
+                                <p>Select day, time, and classroom to confirm recurring booking</p>
+                            </div>
+                            <button id="confirmRecurringButton" class="btn-confirm btn-warning" disabled>
+                                <i class="fas fa-calendar-check"></i>
+                                Confirm Weekly Booking
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <div>
+                    <!-- Stats Card -->
+                    <div class="stats-card">
+                        <div class="stats-content">
+                            <div id="todaysBookingsCount" class="stats-number">0</div>
+                            <div class="stats-label">Today's Bookings</div>
+                        </div>
+                        <div class="stats-icon">
+                            <i class="fas fa-calendar-day"></i>
+                        </div>
+                    </div>
+
+                    <!-- Today's Bookings -->
+                    <div class="bookings-card">
+                        <div class="card-header">
+                            <h5>
+                                <i class="fas fa-list"></i>
+                                Today's Bookings
+                                <span class="realtime-badge-small">Live</span>
+                            </h5>
+                        </div>
+                        <div id="bookingsList" class="bookings-list">
+                            <div class="loading-bookings">
+                                <div class="spinner-small"></div>
+                                Loading bookings...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recurring Classes -->
+                    <div class="bookings-card">
+                        <div class="card-header">
+                            <h5>
+                                <i class="fas fa-repeat"></i>
+                                Recurring Classes
+                                <span class="recurring-badge-small">Weekly</span>
+                            </h5>
+                        </div>
+                        <div id="recurringBookingsList" class="bookings-list">
+                            <div class="loading-bookings">
+                                <div class="spinner-small"></div>
+                                Loading recurring classes...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- System Status -->
+                    <div class="bookings-card">
+                        <div class="card-header">
+                            <h5>
+                                <i class="fas fa-cog"></i>
+                                System Status
+                            </h5>
+                        </div>
+                        <div class="bookings-list">
+                            <div class="booking-item">
+                                <div class="booking-details">
+                                    <div><i class="fas fa-database"></i> <span class="badge success">Firebase Connected</span></div>
+                                    <div><i class="fas fa-sync-alt"></i> <span class="badge success">Real-time Sync</span></div>
+                                    <div><i class="fas fa-broom"></i> <span class="badge success">Auto-cleanup Active</span></div>
+                                    <div><i class="fas fa-shield-alt"></i> <span class="badge success">Conflict Prevention</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Loading Firebase -->
+    <script src="firebase-config.js"></script>
+    <script src="improved-classroom-booking.js"></script>
+
+    <!-- Additional Styles for New Features -->
+    <style>
+    /* Modal Styles for Recurring Management */
+    .recurring-management-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 2000;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .recurring-management-modal.show {
+        opacity: 1;
+    }
+
+    .modal-overlay {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        position: relative;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f8f9fa;
+    }
+
+    .modal-header h4 {
+        margin: 0;
+        color: #333;
+        font-weight: 600;
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5em;
+        cursor: pointer;
+        color: #6c757d;
+        transition: color 0.3s ease;
+    }
+
+    .modal-close:hover {
+        color: #dc3545;
+    }
+
+    .modal-body {
+        line-height: 1.6;
+    }
+
+    .recurring-management-section {
+        margin-bottom: 25px;
+    }
+
+    .recurring-management-section h5 {
+        color: #333;
+        margin-bottom: 15px;
+        font-weight: 600;
+    }
+
+    .date-input-group {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .date-input-group input[type="date"] {
+        padding: 10px 15px;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        font-size: 1em;
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .date-input-group input[type="date"]:focus {
+        outline: none;
+        border-color: #ff6b35;
+        box-shadow: 0 0 0 0.2rem rgba(255, 107, 53, 0.25);
+    }
+
+    .btn-cancel-instance,
+    .btn-manage {
+        background: linear-gradient(135deg, #ffc107, #e0a800);
+        border: none;
+        color: #212529;
+        padding: 10px 15px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+    }
+
+    .btn-cancel-instance:hover,
+    .btn-manage:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(255, 193, 7, 0.3);
+    }
+
+    .cancelled-instances {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 15px;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .cancelled-instance {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        margin-bottom: 8px;
+        background: #fff;
+        border-radius: 6px;
+        border-left: 3px solid #dc3545;
+    }
+
+    .cancelled-instance:last-child {
+        margin-bottom: 0;
+    }
+
+    .btn-restore {
+        background: #28a745;
+        border: none;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.9em;
+        transition: all 0.3s ease;
+    }
+
+    .btn-restore:hover {
+        background: #218838;
+        transform: scale(1.05);
+    }
+
+    /* Enhanced Status Indicators */
+    .badge.success {
+        background: linear-gradient(135deg, #28a745, #20c997);
+    }
+
+    .badge.warning {
+        background: linear-gradient(135deg, #ffc107, #e0a800);
+    }
+
+    .badge.secondary {
+        background: linear-gradient(135deg, #6c757d, #5a6268);
+    }
+
+    /* Improved Mobile Responsiveness for Modal */
+    @media (max-width: 768px) {
+        .modal-content {
+            padding: 20px;
+            margin: 20px;
+            width: calc(100% - 40px);
+        }
+
+        .date-input-group {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .date-input-group input[type="date"] {
+            min-width: auto;
+            margin-bottom: 10px;
+        }
+
+        .cancelled-instance {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+    }
+
+    /* Loading States */
+    .loading-bookings {
+        text-align: center;
+        padding: 20px;
+        color: #6c757d;
+        font-style: italic;
+    }
+
+    /* Enhanced Booking Item Styles */
+    .booking-item .booking-badges {
+        margin-top: 5px;
+    }
+
+    .booking-item.own-booking .booking-title {
+        color: #28a745;
+        font-weight: 600;
+    }
+
+    .booking-item.recurring-booking .booking-title {
+        color: #e0a800;
+        font-weight: 600;
+    }
+
+    /* Status indicator animations */
+    @keyframes statusPulse {
+        0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+        50% {
+            opacity: 0.7;
+            transform: scale(1.05);
+        }
+    }
+
+    .realtime-badge-small,
+    .recurring-badge-small {
+        animation: statusPulse 3s infinite;
+    }
+    </style>
+</body>
+</html>
