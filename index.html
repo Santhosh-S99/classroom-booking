@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Classroom Booking System - Enhanced</title>
+    <title>Classroom Booking System - Enhanced with Future Classes</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -26,7 +26,7 @@
                 <span class="firebase-badge"><i class="fab fa-google"></i> Firebase Powered</span>
                 <span class="realtime-badge"><i class="fas fa-bolt"></i> Real-time Updates</span>
             </div>
-            <p class="header-subtitle">Advanced booking system with conflict detection and auto-cleanup</p>
+            <p class="header-subtitle">Advanced booking system with future class visibility</p>
         </header>
 
         <!-- Login Section -->
@@ -266,16 +266,27 @@
                     </div>
                 </div>
 
-                <!-- Sidebar -->
+                <!-- Enhanced Sidebar with Future Classes -->
                 <div>
-                    <!-- Stats Card -->
+                    <!-- Enhanced Stats Card -->
                     <div class="stats-card">
                         <div class="stats-content">
                             <div id="todaysBookingsCount" class="stats-number">0</div>
-                            <div class="stats-label">Today's Bookings</div>
+                            <div class="stats-label">Today's Classes</div>
                         </div>
                         <div class="stats-icon">
                             <i class="fas fa-calendar-day"></i>
+                        </div>
+                    </div>
+
+                    <!-- Additional Stats Card for Upcoming -->
+                    <div class="stats-card" style="background: linear-gradient(135deg, #28a745, #20c997);">
+                        <div class="stats-content">
+                            <div id="upcomingBookingsCount" class="stats-number">0</div>
+                            <div class="stats-label">Upcoming Classes</div>
+                        </div>
+                        <div class="stats-icon">
+                            <i class="fas fa-calendar-alt"></i>
                         </div>
                     </div>
 
@@ -283,8 +294,8 @@
                     <div class="bookings-card">
                         <div class="card-header">
                             <h5>
-                                <i class="fas fa-list"></i>
-                                Today's Bookings
+                                <i class="fas fa-calendar-day"></i>
+                                Today's Classes
                                 <span class="realtime-badge-small">Live</span>
                             </h5>
                         </div>
@@ -296,13 +307,30 @@
                         </div>
                     </div>
 
-                    <!-- Recurring Classes -->
+                    <!-- NEW: Upcoming One-Time Classes -->
+                    <div class="bookings-card">
+                        <div class="card-header">
+                            <h5>
+                                <i class="fas fa-calendar-alt"></i>
+                                Upcoming Classes
+                                <span style="background: linear-gradient(135deg, #17a2b8, #138496); color: white; padding: 6px 12px; border-radius: 12px; font-size: 0.75em; font-weight: 600;">Future</span>
+                            </h5>
+                        </div>
+                        <div id="upcomingBookingsList" class="bookings-list">
+                            <div class="loading-bookings">
+                                <div class="spinner-small"></div>
+                                Loading upcoming classes...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Weekly Recurring Classes -->
                     <div class="bookings-card">
                         <div class="card-header">
                             <h5>
                                 <i class="fas fa-repeat"></i>
-                                Recurring Classes
-                                <span class="recurring-badge-small">Weekly</span>
+                                Weekly Recurring
+                                <span class="recurring-badge-small">Schedule</span>
                             </h5>
                         </div>
                         <div id="recurringBookingsList" class="bookings-list">
@@ -313,7 +341,7 @@
                         </div>
                     </div>
 
-                    <!-- System Status -->
+                    <!-- Enhanced System Status -->
                     <div class="bookings-card">
                         <div class="card-header">
                             <h5>
@@ -328,6 +356,7 @@
                                     <div><i class="fas fa-sync-alt"></i> <span class="badge success">Real-time Sync</span></div>
                                     <div><i class="fas fa-broom"></i> <span class="badge success">Auto-cleanup Active</span></div>
                                     <div><i class="fas fa-shield-alt"></i> <span class="badge success">Conflict Prevention</span></div>
+                                    <div><i class="fas fa-eye"></i> <span class="badge info">Future Classes View</span></div>
                                 </div>
                             </div>
                         </div>
@@ -337,251 +366,34 @@
         </main>
     </div>
 
-    <!-- Loading Firebase -->
+    <!-- Enhanced CSS for new badge -->
+    <style>
+        .badge.info {
+            background: linear-gradient(135deg, #17a2b8, #138496);
+            color: white;
+        }
+        
+        /* Enhanced upcoming bookings styles */
+        .booking-item .badge.info {
+            font-size: 0.75em;
+            padding: 4px 8px;
+            border-radius: 10px;
+        }
+        
+        /* Additional responsive improvements */
+        @media (max-width: 768px) {
+            .stats-card {
+                margin-bottom: 15px;
+            }
+            
+            .bookings-card {
+                margin-bottom: 15px;
+            }
+        }
+    </style>
+
+    <!-- Loading Firebase and System -->
     <script src="firebase-config.js"></script>
     <script src="classroom-booking.js"></script>
-
-    <!-- Additional Styles for New Features -->
-    <style>
-    /* Modal Styles for Recurring Management */
-    .recurring-management-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 2000;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-    }
-
-    .recurring-management-modal.show {
-        opacity: 1;
-    }
-
-    .modal-overlay {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        top: 0;
-        left: 0;
-    }
-
-    .modal-content {
-        background: white;
-        border-radius: 20px;
-        padding: 30px;
-        max-width: 600px;
-        width: 90%;
-        max-height: 80vh;
-        overflow-y: auto;
-        position: relative;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-    }
-
-    .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 25px;
-        padding-bottom: 15px;
-        border-bottom: 2px solid #f8f9fa;
-    }
-
-    .modal-header h4 {
-        margin: 0;
-        color: #333;
-        font-weight: 600;
-    }
-
-    .modal-close {
-        background: none;
-        border: none;
-        font-size: 1.5em;
-        cursor: pointer;
-        color: #6c757d;
-        transition: color 0.3s ease;
-    }
-
-    .modal-close:hover {
-        color: #dc3545;
-    }
-
-    .modal-body {
-        line-height: 1.6;
-    }
-
-    .recurring-management-section {
-        margin-bottom: 25px;
-    }
-
-    .recurring-management-section h5 {
-        color: #333;
-        margin-bottom: 15px;
-        font-weight: 600;
-    }
-
-    .date-input-group {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        flex-wrap: wrap;
-    }
-
-    .date-input-group input[type="date"] {
-        padding: 10px 15px;
-        border: 2px solid #e9ecef;
-        border-radius: 8px;
-        font-size: 1em;
-        flex: 1;
-        min-width: 200px;
-    }
-
-    .date-input-group input[type="date"]:focus {
-        outline: none;
-        border-color: #ff6b35;
-        box-shadow: 0 0 0 0.2rem rgba(255, 107, 53, 0.25);
-    }
-
-    .btn-cancel-instance,
-    .btn-manage {
-        background: linear-gradient(135deg, #ffc107, #e0a800);
-        border: none;
-        color: #212529;
-        padding: 10px 15px;
-        border-radius: 8px;
-        cursor: pointer;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        white-space: nowrap;
-    }
-
-    .btn-cancel-instance:hover,
-    .btn-manage:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(255, 193, 7, 0.3);
-    }
-
-    .cancelled-instances {
-        background: #f8f9fa;
-        border-radius: 10px;
-        padding: 15px;
-        max-height: 200px;
-        overflow-y: auto;
-    }
-
-    .cancelled-instance {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px;
-        margin-bottom: 8px;
-        background: #fff;
-        border-radius: 6px;
-        border-left: 3px solid #dc3545;
-    }
-
-    .cancelled-instance:last-child {
-        margin-bottom: 0;
-    }
-
-    .btn-restore {
-        background: #28a745;
-        border: none;
-        color: white;
-        padding: 5px 10px;
-        border-radius: 5px;
-        cursor: pointer;
-        font-size: 0.9em;
-        transition: all 0.3s ease;
-    }
-
-    .btn-restore:hover {
-        background: #218838;
-        transform: scale(1.05);
-    }
-
-    /* Enhanced Status Indicators */
-    .badge.success {
-        background: linear-gradient(135deg, #28a745, #20c997);
-    }
-
-    .badge.warning {
-        background: linear-gradient(135deg, #ffc107, #e0a800);
-    }
-
-    .badge.secondary {
-        background: linear-gradient(135deg, #6c757d, #5a6268);
-    }
-
-    /* Improved Mobile Responsiveness for Modal */
-    @media (max-width: 768px) {
-        .modal-content {
-            padding: 20px;
-            margin: 20px;
-            width: calc(100% - 40px);
-        }
-
-        .date-input-group {
-            flex-direction: column;
-            align-items: stretch;
-        }
-
-        .date-input-group input[type="date"] {
-            min-width: auto;
-            margin-bottom: 10px;
-        }
-
-        .cancelled-instance {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 10px;
-        }
-    }
-
-    /* Loading States */
-    .loading-bookings {
-        text-align: center;
-        padding: 20px;
-        color: #6c757d;
-        font-style: italic;
-    }
-
-    /* Enhanced Booking Item Styles */
-    .booking-item .booking-badges {
-        margin-top: 5px;
-    }
-
-    .booking-item.own-booking .booking-title {
-        color: #28a745;
-        font-weight: 600;
-    }
-
-    .booking-item.recurring-booking .booking-title {
-        color: #e0a800;
-        font-weight: 600;
-    }
-
-    /* Status indicator animations */
-    @keyframes statusPulse {
-        0%, 100% {
-            opacity: 1;
-            transform: scale(1);
-        }
-        50% {
-            opacity: 0.7;
-            transform: scale(1.05);
-        }
-    }
-
-    .realtime-badge-small,
-    .recurring-badge-small {
-        animation: statusPulse 3s infinite;
-    }
-    </style>
 </body>
 </html>
