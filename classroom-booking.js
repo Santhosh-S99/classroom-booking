@@ -1,12 +1,11 @@
 /**
- * Improved Classroom Booking System
- * Version 4.0 - Fixed Logic Issues
+ * Fixed Classroom Booking System
+ * Version 4.1 - GitHub Pages Compatible
  * 
- * Fixes:
- * 1. Proper recurring booking conflict detection
- * 2. Individual recurring booking cancellation
- * 3. Auto-cleanup of expired bookings
- * 4. Enhanced validation and error handling
+ * This version addresses common deployment issues:
+ * - Better error handling for loading issues
+ * - More robust initialization
+ * - GitHub Pages compatibility fixes
  */
 
 class ImprovedClassroomBookingSystem {
@@ -30,6 +29,11 @@ class ImprovedClassroomBookingSystem {
         // Cleanup interval (check every 5 minutes)
         this.cleanupInterval = null;
 
+        // Initialization flags
+        this.initialized = false;
+        this.initAttempts = 0;
+        this.maxInitAttempts = 5;
+
         // Configuration
         this.timeSlots = [
             '08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00',
@@ -51,80 +55,188 @@ class ImprovedClassroomBookingSystem {
             'Thursday', 'Friday', 'Saturday'
         ];
 
-        // Initialize when DOM is ready
+        // Start initialization process
+        this.initializeSystem();
+    }
+
+    async initializeSystem() {
+        console.log('Starting classroom booking system initialization...');
+        
+        // Wait for DOM to be ready
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => this.init());
+            document.addEventListener('DOMContentLoaded', () => this.attemptInit());
         } else {
-            this.init();
+            this.attemptInit();
         }
     }
 
-    init() {
-        if (typeof firebase === 'undefined') {
-            console.error('Firebase not loaded. Please include Firebase SDK.');
-            setTimeout(() => this.init(), 1000);
-            return;
-        }
+    async attemptInit() {
+        this.initAttempts++;
+        console.log(`Initialization attempt ${this.initAttempts}/${this.maxInitAttempts}`);
 
         try {
+            // Check if Firebase is available
+            if (typeof firebase === 'undefined') {
+                throw new Error('Firebase SDK not loaded');
+            }
+
+            // Check if Firebase is already initialized
+            if (firebase.apps.length === 0) {
+                // Firebase not initialized, wait a bit and retry
+                if (this.initAttempts < this.maxInitAttempts) {
+                    console.log('Firebase not initialized yet, retrying in 2 seconds...');
+                    setTimeout(() => this.attemptInit(), 2000);
+                    return;
+                } else {
+                    throw new Error('Firebase initialization failed after multiple attempts');
+                }
+            }
+
+            // Initialize Firebase services
             this.auth = firebase.auth();
             this.db = firebase.firestore();
+
+            if (!this.auth || !this.db) {
+                throw new Error('Firebase services not available');
+            }
+
+            // Set up event listeners
             this.setupEventListeners();
+            
+            // Set up auth observer
             this.setupAuthObserver();
-            console.log('Improved Classroom Booking System initialized successfully');
+            
+            this.initialized = true;
+            console.log('✅ Classroom Booking System initialized successfully');
+            
+            // Show success message
+            this.showNotification('System initialized successfully!', 'success');
+
         } catch (error) {
-            console.error('Error initializing Firebase:', error);
+            console.error('❌ Initialization error:', error);
+            
+            if (this.initAttempts < this.maxInitAttempts) {
+                console.log(`Retrying initialization in ${this.initAttempts * 2} seconds...`);
+                setTimeout(() => this.attemptInit(), this.initAttempts * 2000);
+            } else {
+                console.error('🚨 Failed to initialize after maximum attempts');
+                this.showInitializationError(error);
+            }
         }
+    }
+
+    showInitializationError(error) {
+        // Create error display
+        const errorDiv = document.createElement('div');
+        errorDiv.id = 'initializationError';
+        errorDiv.innerHTML = `
+            <div style="background: linear-gradient(135deg, #dc3545, #c82333); color: white; padding: 20px; border-radius: 15px; margin: 20px; text-align: center; box-shadow: 0 10px 30px rgba(220, 53, 69, 0.3);">
+                <h2><i class="fas fa-exclamation-triangle"></i> System Initialization Failed</h2>
+                <p><strong>Error:</strong> ${error.message}</p>
+                <div style="margin-top: 15px;">
+                    <button onclick="location.reload()" style="background: white; color: #dc3545; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin-right: 10px; font-weight: 600;">
+                        <i class="fas fa-refresh"></i> Retry
+                    </button>
+                    <button onclick="window.open('debug-console.html', '_blank')" style="background: rgba(255,255,255,0.2); color: white; border: 2px solid white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                        <i class="fas fa-tools"></i> Debug Console
+                    </button>
+                </div>
+                <div style="margin-top: 15px; font-size: 0.9em; opacity: 0.9;">
+                    <p>Common fixes:</p>
+                    <ul style="text-align: left; display: inline-block;">
+                        <li>Check browser console (F12) for detailed errors</li>
+                        <li>Ensure all files are uploaded correctly</li>
+                        <li>Verify Firebase configuration</li>
+                        <li>Make sure you're using HTTPS</li>
+                    </ul>
+                </div>
+            </div>
+        `;
+        
+        // Insert at the beginning of body
+        document.body.insertBefore(errorDiv, document.body.firstChild);
     }
 
     setupEventListeners() {
+        console.log('Setting up event listeners...');
+
         // Login form
         const loginForm = document.getElementById('teacherLoginForm');
         if (loginForm) {
             loginForm.addEventListener('submit', (e) => this.handleLogin(e));
+            console.log('✅ Login form listener attached');
+        } else {
+            console.warn('⚠️ Login form not found');
         }
 
-        // Password toggle
+        // Password toggle - Enhanced with better error handling
         const togglePassword = document.getElementById('togglePassword');
         if (togglePassword) {
             togglePassword.addEventListener('click', () => this.togglePasswordVisibility());
+            console.log('✅ Password toggle listener attached');
+        } else {
+            console.warn('⚠️ Password toggle button not found');
         }
 
         // Logout button
         const logoutButton = document.getElementById('logoutButton');
         if (logoutButton) {
             logoutButton.addEventListener('click', () => this.handleLogout());
+            console.log('✅ Logout button listener attached');
         }
 
         // Booking type tabs
-        document.querySelectorAll('.booking-tab').forEach(tab => {
-            tab.addEventListener('click', (e) => {
-                const type = e.target.dataset.type;
-                if (type) {
-                    this.switchBookingType(type);
-                }
+        const bookingTabs = document.querySelectorAll('.booking-tab');
+        if (bookingTabs.length > 0) {
+            bookingTabs.forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    const type = e.target.dataset.type;
+                    if (type) {
+                        this.switchBookingType(type);
+                    }
+                });
             });
-        });
+            console.log(`✅ ${bookingTabs.length} booking tab listeners attached`);
+        }
 
         // Calendar navigation
         const prevButton = document.getElementById('prevMonthButton');
         const nextButton = document.getElementById('nextMonthButton');
-        if (prevButton) prevButton.addEventListener('click', () => this.navigateMonth(-1));
-        if (nextButton) nextButton.addEventListener('click', () => this.navigateMonth(1));
+        if (prevButton) {
+            prevButton.addEventListener('click', () => this.navigateMonth(-1));
+            console.log('✅ Previous month button listener attached');
+        }
+        if (nextButton) {
+            nextButton.addEventListener('click', () => this.navigateMonth(1));
+            console.log('✅ Next month button listener attached');
+        }
 
         // Booking confirmation buttons
         const confirmButton = document.getElementById('confirmBookingButton');
         const confirmRecurringButton = document.getElementById('confirmRecurringButton');
+        
         if (confirmButton) {
             confirmButton.addEventListener('click', () => this.handleBookingConfirmation());
+            console.log('✅ Confirm booking button listener attached');
         }
+        
         if (confirmRecurringButton) {
             confirmRecurringButton.addEventListener('click', () => this.handleRecurringBookingConfirmation());
+            console.log('✅ Confirm recurring button listener attached');
         }
+
+        console.log('Event listeners setup completed');
     }
 
     setupAuthObserver() {
+        if (!this.auth) {
+            console.error('Auth service not available for observer setup');
+            return;
+        }
+
         this.auth.onAuthStateChanged((user) => {
+            console.log('Auth state changed:', user ? user.email : 'No user');
+            
             if (user) {
                 this.currentUser = user;
                 this.showBookingSystem();
@@ -137,9 +249,171 @@ class ImprovedClassroomBookingSystem {
                 this.stopCleanupService();
             }
         });
+
+        console.log('✅ Auth observer setup completed');
     }
 
-    // NEW: Auto-cleanup service for expired bookings
+    async handleLogin(event) {
+        event.preventDefault();
+        console.log('Login attempt started');
+
+        const email = document.getElementById('teacherEmail')?.value?.trim();
+        const password = document.getElementById('teacherPassword')?.value;
+
+        if (!email || !password) {
+            this.showNotification('Please fill in all fields', 'error');
+            console.warn('Login failed: Missing email or password');
+            return;
+        }
+
+        if (!this.auth) {
+            this.showNotification('Authentication service not available', 'error');
+            console.error('Login failed: Auth service not available');
+            return;
+        }
+
+        try {
+            console.log(`Attempting login for: ${email}`);
+            const userCredential = await this.auth.signInWithEmailAndPassword(email, password);
+            
+            if (userCredential.user) {
+                this.showNotification('Login successful!', 'success');
+                console.log(`✅ Login successful for: ${userCredential.user.email}`);
+                
+                // Clear form
+                const form = document.getElementById('teacherLoginForm');
+                if (form) form.reset();
+            }
+        } catch (error) {
+            console.error('❌ Login failed:', error);
+            const errorMessage = this.getErrorMessage(error.code);
+            this.showNotification(errorMessage, 'error');
+        }
+    }
+
+    async handleLogout() {
+        if (!this.auth) {
+            console.error('Auth service not available for logout');
+            return;
+        }
+
+        try {
+            await this.auth.signOut();
+            this.showNotification('Logged out successfully', 'success');
+            console.log('✅ Logout successful');
+        } catch (error) {
+            console.error('❌ Logout error:', error);
+            this.showNotification('Error logging out: ' + error.message, 'error');
+        }
+    }
+
+    togglePasswordVisibility() {
+        console.log('Password toggle clicked');
+        
+        const passwordInput = document.getElementById('teacherPassword');
+        const toggleIcon = document.querySelector('#togglePassword i');
+        
+        if (!passwordInput) {
+            console.error('Password input not found');
+            this.showNotification('Password field not found', 'error');
+            return;
+        }
+        
+        if (!toggleIcon) {
+            console.error('Toggle icon not found');
+            return;
+        }
+
+        try {
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.className = 'fas fa-eye-slash';
+                console.log('Password shown');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.className = 'fas fa-eye';
+                console.log('Password hidden');
+            }
+        } catch (error) {
+            console.error('Error toggling password visibility:', error);
+        }
+    }
+
+    // Enhanced notification system with better error handling
+    showNotification(message, type = 'info') {
+        console.log(`Notification: ${type.toUpperCase()} - ${message}`);
+
+        try {
+            const container = document.getElementById('toastContainer') || this.createToastContainer();
+            const toast = document.createElement('div');
+            toast.className = `toast-notification ${type}`;
+            
+            const icons = {
+                success: 'fas fa-check-circle',
+                error: 'fas fa-exclamation-circle',
+                info: 'fas fa-info-circle',
+                warning: 'fas fa-exclamation-triangle'
+            };
+
+            toast.innerHTML = `
+                <div class="toast-header ${type}">
+                    <i class="${icons[type] || icons.info}"></i>
+                    ${type.charAt(0).toUpperCase() + type.slice(1)}
+                </div>
+                <div class="toast-body">${message}</div>
+            `;
+
+            container.appendChild(toast);
+            
+            // Trigger show animation
+            setTimeout(() => toast.classList.add('show'), 100);
+
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (toast.classList) {
+                    toast.classList.remove('show');
+                    setTimeout(() => {
+                        if (toast.parentNode) {
+                            toast.parentNode.removeChild(toast);
+                        }
+                    }, 300);
+                }
+            }, 5000);
+
+        } catch (error) {
+            console.error('Error showing notification:', error);
+            // Fallback to alert if toast system fails
+            alert(`${type.toUpperCase()}: ${message}`);
+        }
+    }
+
+    createToastContainer() {
+        try {
+            const container = document.createElement('div');
+            container.id = 'toastContainer';
+            container.className = 'toast-container';
+            document.body.appendChild(container);
+            return container;
+        } catch (error) {
+            console.error('Error creating toast container:', error);
+            return null;
+        }
+    }
+
+    getErrorMessage(errorCode) {
+        const messages = {
+            'auth/user-not-found': 'No account found with this email address',
+            'auth/wrong-password': 'Incorrect password',
+            'auth/invalid-email': 'Invalid email address',
+            'auth/too-many-requests': 'Too many failed attempts. Please try again later',
+            'auth/network-request-failed': 'Network error. Please check your connection',
+            'auth/invalid-credential': 'Invalid email or password',
+            'auth/user-disabled': 'This account has been disabled'
+        };
+        return messages[errorCode] || 'Login failed. Please try again.';
+    }
+
+    // Auto-cleanup service for expired bookings
     startCleanupService() {
         // Run cleanup immediately
         this.cleanupExpiredBookings();
@@ -148,16 +422,24 @@ class ImprovedClassroomBookingSystem {
         this.cleanupInterval = setInterval(() => {
             this.cleanupExpiredBookings();
         }, 5 * 60 * 1000); // 5 minutes
+
+        console.log('✅ Cleanup service started');
     }
 
     stopCleanupService() {
         if (this.cleanupInterval) {
             clearInterval(this.cleanupInterval);
             this.cleanupInterval = null;
+            console.log('🛑 Cleanup service stopped');
         }
     }
 
     async cleanupExpiredBookings() {
+        if (!this.db) {
+            console.warn('Database not available for cleanup');
+            return;
+        }
+
         try {
             const now = new Date();
             const currentTime = now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0');
@@ -178,13 +460,15 @@ class ImprovedClassroomBookingSystem {
             // Delete expired one-time bookings
             for (const booking of expiredBookings) {
                 await this.db.collection('bookings').doc(booking.id).delete();
-                console.log(`Cleaned up expired booking: ${booking.id}`);
+                console.log(`🧹 Cleaned up expired booking: ${booking.id}`);
             }
 
-            // Note: Recurring bookings don't get deleted as they repeat weekly
+            if (expiredBookings.length > 0) {
+                console.log(`✅ Cleanup completed: ${expiredBookings.length} expired bookings removed`);
+            }
             
         } catch (error) {
-            console.error('Error during cleanup:', error);
+            console.error('❌ Error during cleanup:', error);
         }
     }
 
@@ -194,35 +478,7 @@ class ImprovedClassroomBookingSystem {
         return hours * 60 + minutes;
     }
 
-    async handleLogin(event) {
-        event.preventDefault();
-        const email = document.getElementById('teacherEmail').value.trim();
-        const password = document.getElementById('teacherPassword').value;
-
-        if (!email || !password) {
-            this.showNotification('Please fill in all fields', 'error');
-            return;
-        }
-
-        try {
-            await this.auth.signInWithEmailAndPassword(email, password);
-            this.showNotification('Login successful!', 'success');
-            document.getElementById('teacherLoginForm').reset();
-        } catch (error) {
-            this.showNotification(this.getErrorMessage(error.code), 'error');
-        }
-    }
-
-    async handleLogout() {
-        try {
-            await this.auth.signOut();
-            this.showNotification('Logged out successfully', 'success');
-        } catch (error) {
-            this.showNotification('Error logging out: ' + error.message, 'error');
-        }
-    }
-
-    // IMPROVED: Enhanced conflict detection that includes recurring bookings
+    // Enhanced conflict detection that includes recurring bookings
     async checkBookingConflict(date, time, classroom, excludeId = null) {
         // Check against one-time bookings
         const oneTimeConflict = this.allBookings.some(booking => 
@@ -236,7 +492,7 @@ class ImprovedClassroomBookingSystem {
             return { conflict: true, type: 'one-time' };
         }
 
-        // NEW: Check against recurring bookings
+        // Check against recurring bookings
         const targetDate = new Date(date);
         const dayOfWeek = this.daysOfWeek[targetDate.getDay()];
 
@@ -260,10 +516,15 @@ class ImprovedClassroomBookingSystem {
         return { conflict: false };
     }
 
-    // IMPROVED: Enhanced booking confirmation with better conflict detection
+    // Enhanced booking confirmation with better conflict detection
     async handleBookingConfirmation() {
         if (!this.selectedDate || !this.selectedTime || !this.selectedClassroom) {
             this.showNotification('Please select date, time, and classroom', 'error');
+            return;
+        }
+
+        if (!this.db || !this.currentUser) {
+            this.showNotification('System not ready. Please try again.', 'error');
             return;
         }
 
@@ -283,8 +544,8 @@ class ImprovedClassroomBookingSystem {
             return;
         }
 
-        const subject = document.getElementById('subject')?.value.trim() || '';
-        const notes = document.getElementById('notes')?.value.trim() || '';
+        const subject = document.getElementById('subject')?.value?.trim() || '';
+        const notes = document.getElementById('notes')?.value?.trim() || '';
 
         if (!subject) {
             this.showNotification('Please enter a subject', 'error');
@@ -310,24 +571,33 @@ class ImprovedClassroomBookingSystem {
             this.resetSelections();
             
             // Clear form fields
-            if (document.getElementById('subject')) document.getElementById('subject').value = '';
-            if (document.getElementById('notes')) document.getElementById('notes').value = '';
+            const subjectField = document.getElementById('subject');
+            const notesField = document.getElementById('notes');
+            if (subjectField) subjectField.value = '';
+            if (notesField) notesField.value = '';
+
+            console.log('✅ One-time booking created successfully');
 
         } catch (error) {
-            console.error('Error creating booking:', error);
+            console.error('❌ Error creating booking:', error);
             this.showNotification('Error creating booking: ' + error.message, 'error');
         }
     }
 
-    // IMPROVED: Enhanced recurring booking with exceptions support
+    // Enhanced recurring booking with exceptions support
     async handleRecurringBookingConfirmation() {
         if (!this.selectedRecurringDay || !this.selectedRecurringTime || !this.selectedRecurringClassroom) {
             this.showNotification('Please select day, time, and classroom', 'error');
             return;
         }
 
-        const subject = document.getElementById('recurringSubject')?.value.trim() || '';
-        const notes = document.getElementById('recurringNotes')?.value.trim() || '';
+        if (!this.db || !this.currentUser) {
+            this.showNotification('System not ready. Please try again.', 'error');
+            return;
+        }
+
+        const subject = document.getElementById('recurringSubject')?.value?.trim() || '';
+        const notes = document.getElementById('recurringNotes')?.value?.trim() || '';
 
         if (!subject) {
             this.showNotification('Please enter a subject', 'error');
@@ -358,7 +628,7 @@ class ImprovedClassroomBookingSystem {
                 notes: notes,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                 type: 'recurring',
-                exceptions: [] // NEW: Array to store cancelled dates
+                exceptions: [] // Array to store cancelled dates
             };
 
             await this.db.collection('recurringBookings').add(recurringBookingData);
@@ -366,17 +636,26 @@ class ImprovedClassroomBookingSystem {
             this.resetSelections();
             
             // Clear form fields
-            if (document.getElementById('recurringSubject')) document.getElementById('recurringSubject').value = '';
-            if (document.getElementById('recurringNotes')) document.getElementById('recurringNotes').value = '';
+            const subjectField = document.getElementById('recurringSubject');
+            const notesField = document.getElementById('recurringNotes');
+            if (subjectField) subjectField.value = '';
+            if (notesField) notesField.value = '';
+
+            console.log('✅ Recurring booking created successfully');
 
         } catch (error) {
-            console.error('Error creating recurring booking:', error);
+            console.error('❌ Error creating recurring booking:', error);
             this.showNotification('Error creating recurring booking: ' + error.message, 'error');
         }
     }
 
-    // NEW: Cancel individual instance of recurring booking
+    // Cancel individual instance of recurring booking
     async cancelRecurringInstance(recurringBookingId, dateToCancel) {
+        if (!this.db) {
+            this.showNotification('Database not available', 'error');
+            return;
+        }
+
         try {
             const recurringBookingRef = this.db.collection('recurringBookings').doc(recurringBookingId);
             const doc = await recurringBookingRef.get();
@@ -396,18 +675,23 @@ class ImprovedClassroomBookingSystem {
                 });
 
                 this.showNotification('Individual class cancelled successfully!', 'success');
-                console.log(`Cancelled recurring booking instance for ${dateToCancel}`);
+                console.log(`✅ Cancelled recurring booking instance for ${dateToCancel}`);
             } else {
                 this.showNotification('This class is already cancelled', 'info');
             }
         } catch (error) {
-            console.error('Error cancelling recurring instance:', error);
+            console.error('❌ Error cancelling recurring instance:', error);
             this.showNotification('Error cancelling class: ' + error.message, 'error');
         }
     }
 
-    // NEW: Restore cancelled recurring instance
+    // Restore cancelled recurring instance
     async restoreRecurringInstance(recurringBookingId, dateToRestore) {
+        if (!this.db) {
+            this.showNotification('Database not available', 'error');
+            return;
+        }
+
         try {
             const recurringBookingRef = this.db.collection('recurringBookings').doc(recurringBookingId);
             const doc = await recurringBookingRef.get();
@@ -425,222 +709,93 @@ class ImprovedClassroomBookingSystem {
             });
 
             this.showNotification('Class restored successfully!', 'success');
-            console.log(`Restored recurring booking instance for ${dateToRestore}`);
+            console.log(`✅ Restored recurring booking instance for ${dateToRestore}`);
         } catch (error) {
-            console.error('Error restoring recurring instance:', error);
+            console.error('❌ Error restoring recurring instance:', error);
             this.showNotification('Error restoring class: ' + error.message, 'error');
         }
     }
 
     loadBookingsRealtime() {
-        const bookingsQuery = this.db.collection('bookings').orderBy('timestamp', 'desc');
-        
-        bookingsQuery.onSnapshot((snapshot) => {
-            this.allBookings = [];
-            snapshot.forEach((doc) => {
-                this.allBookings.push({
-                    id: doc.id,
-                    ...doc.data()
+        if (!this.db) {
+            console.warn('Database not available for loading bookings');
+            return;
+        }
+
+        try {
+            const bookingsQuery = this.db.collection('bookings').orderBy('timestamp', 'desc');
+            
+            bookingsQuery.onSnapshot((snapshot) => {
+                this.allBookings = [];
+                snapshot.forEach((doc) => {
+                    this.allBookings.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
                 });
+                
+                console.log(`📚 Loaded ${this.allBookings.length} one-time bookings`);
+                this.updateBookingsDisplay();
+                this.generateTimeSlots();
+                this.generateClassroomTiles();
+            }, (error) => {
+                console.error('❌ Error loading bookings:', error);
+                this.showNotification('Error loading bookings: ' + error.message, 'error');
             });
-            this.updateBookingsDisplay();
-            this.generateTimeSlots();
-            this.generateClassroomTiles();
-        });
+
+        } catch (error) {
+            console.error('❌ Error setting up bookings listener:', error);
+        }
     }
 
     loadRecurringBookingsRealtime() {
-        const recurringQuery = this.db.collection('recurringBookings').orderBy('timestamp', 'desc');
-        
-        recurringQuery.onSnapshot((snapshot) => {
-            this.recurringBookings = [];
-            snapshot.forEach((doc) => {
-                this.recurringBookings.push({
-                    id: doc.id,
-                    ...doc.data()
-                });
-            });
-            this.updateRecurringBookingsDisplay();
-            this.generateTimeSlots();
-            this.generateClassroomTiles();
-            this.generateRecurringTimeSlots();
-            this.generateRecurringClassroomTiles();
-        });
-    }
-
-    // IMPROVED: Enhanced booking display with individual cancellation options
-    updateBookingsDisplay() {
-        const bookingsList = document.getElementById('bookingsList');
-        if (!bookingsList) return;
-
-        if (this.allBookings.length === 0) {
-            bookingsList.innerHTML = '<div class="loading-bookings">No bookings found</div>';
+        if (!this.db) {
+            console.warn('Database not available for loading recurring bookings');
             return;
         }
 
-        const today = this.formatDate(new Date());
-        const todaysBookings = this.allBookings.filter(booking => booking.date === today);
-
-        bookingsList.innerHTML = todaysBookings.map(booking => {
-            const isOwnBooking = booking.teacherId === this.currentUser?.uid;
-            return `
-                <div class="booking-item ${isOwnBooking ? 'own-booking' : ''}">
-                    <div class="booking-header">
-                        <div>
-                            <div class="booking-title">${booking.subject}</div>
-                            <div class="booking-badges">
-                                ${isOwnBooking ? '<span class="badge success">Your Booking</span>' : ''}
-                                <span class="badge secondary">One-time</span>
-                            </div>
-                        </div>
-                        ${isOwnBooking ? `
-                            <button class="btn-delete" onclick="classroomSystem.deleteBooking('${booking.id}')">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        ` : ''}
-                    </div>
-                    <div class="booking-details">
-                        <div><i class="fas fa-user"></i> ${booking.teacherName}</div>
-                        <div><i class="fas fa-door-open"></i> ${booking.classroom}</div>
-                        <div><i class="fas fa-clock"></i> ${booking.time}</div>
-                        <div><i class="fas fa-calendar"></i> ${booking.date}</div>
-                        ${booking.notes ? `<div><i class="fas fa-sticky-note"></i> ${booking.notes}</div>` : ''}
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
-
-    // NEW: Enhanced recurring bookings display with individual cancellation
-    updateRecurringBookingsDisplay() {
-        const recurringList = document.getElementById('recurringBookingsList');
-        if (!recurringList) return;
-
-        if (this.recurringBookings.length === 0) {
-            recurringList.innerHTML = '<div class="loading-bookings">No recurring bookings found</div>';
-            return;
-        }
-
-        recurringList.innerHTML = this.recurringBookings.map(booking => {
-            const isOwnBooking = booking.teacherId === this.currentUser?.uid;
-            const exceptions = booking.exceptions || [];
+        try {
+            const recurringQuery = this.db.collection('recurringBookings').orderBy('timestamp', 'desc');
             
-            return `
-                <div class="booking-item recurring-booking ${isOwnBooking ? 'own-booking' : ''}">
-                    <div class="booking-header">
-                        <div>
-                            <div class="booking-title">${booking.subject}</div>
-                            <div class="booking-badges">
-                                ${isOwnBooking ? '<span class="badge success">Your Booking</span>' : ''}
-                                <span class="badge warning">Recurring</span>
-                                ${exceptions.length > 0 ? `<span class="badge secondary">${exceptions.length} Cancelled</span>` : ''}
-                            </div>
-                        </div>
-                        ${isOwnBooking ? `
-                            <div style="display: flex; gap: 5px;">
-                                <button class="btn-delete btn-manage" onclick="classroomSystem.showRecurringManagement('${booking.id}')">
-                                    <i class="fas fa-cog"></i> Manage
-                                </button>
-                                <button class="btn-delete" onclick="classroomSystem.deleteRecurringBooking('${booking.id}')">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        ` : ''}
-                    </div>
-                    <div class="booking-details">
-                        <div><i class="fas fa-user"></i> ${booking.teacherName}</div>
-                        <div><i class="fas fa-door-open"></i> ${booking.classroom}</div>
-                        <div><i class="fas fa-clock"></i> ${booking.time}</div>
-                        <div><i class="fas fa-calendar-alt"></i> Every ${booking.dayOfWeek}</div>
-                        ${booking.notes ? `<div><i class="fas fa-sticky-note"></i> ${booking.notes}</div>` : ''}
-                    </div>
-                </div>
-            `;
-        }).join('');
+            recurringQuery.onSnapshot((snapshot) => {
+                this.recurringBookings = [];
+                snapshot.forEach((doc) => {
+                    this.recurringBookings.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                
+                console.log(`🔄 Loaded ${this.recurringBookings.length} recurring bookings`);
+                this.updateRecurringBookingsDisplay();
+                this.generateTimeSlots();
+                this.generateClassroomTiles();
+                this.generateRecurringTimeSlots();
+                this.generateRecurringClassroomTiles();
+            }, (error) => {
+                console.error('❌ Error loading recurring bookings:', error);
+                this.showNotification('Error loading recurring bookings: ' + error.message, 'error');
+            });
+
+        } catch (error) {
+            console.error('❌ Error setting up recurring bookings listener:', error);
+        }
     }
 
-    // NEW: Show recurring booking management modal
-    showRecurringManagement(recurringBookingId) {
-        const booking = this.recurringBookings.find(b => b.id === recurringBookingId);
-        if (!booking) return;
-
-        const modal = document.createElement('div');
-        modal.className = 'recurring-management-modal';
-        modal.innerHTML = `
-            <div class="modal-overlay" onclick="this.parentElement.remove()">
-                <div class="modal-content" onclick="event.stopPropagation()">
-                    <div class="modal-header">
-                        <h4>Manage Recurring Class: ${booking.subject}</h4>
-                        <button class="modal-close" onclick="this.closest('.recurring-management-modal').remove()">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <p><strong>Schedule:</strong> Every ${booking.dayOfWeek} at ${booking.time}</p>
-                        <p><strong>Classroom:</strong> ${booking.classroom}</p>
-                        <div class="recurring-management-section">
-                            <h5>Cancel Individual Classes</h5>
-                            <div class="date-input-group">
-                                <input type="date" id="cancelDate" min="${new Date().toISOString().split('T')[0]}">
-                                <button class="btn-cancel-instance" onclick="classroomSystem.handleInstanceCancellation('${recurringBookingId}')">
-                                    Cancel This Date
-                                </button>
-                            </div>
-                        </div>
-                        ${booking.exceptions && booking.exceptions.length > 0 ? `
-                            <div class="recurring-management-section">
-                                <h5>Cancelled Classes</h5>
-                                <div class="cancelled-instances">
-                                    ${booking.exceptions.map(date => `
-                                        <div class="cancelled-instance">
-                                            <span>${date}</span>
-                                            <button class="btn-restore" onclick="classroomSystem.restoreRecurringInstance('${recurringBookingId}', '${date}')">
-                                                Restore
-                                            </button>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </div>
-                        ` : ''}
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(modal);
-        setTimeout(() => modal.classList.add('show'), 10);
-    }
-
-    // NEW: Handle individual instance cancellation
-    async handleInstanceCancellation(recurringBookingId) {
-        const dateInput = document.getElementById('cancelDate');
-        const dateToCancel = dateInput.value;
-
-        if (!dateToCancel) {
-            this.showNotification('Please select a date to cancel', 'error');
-            return;
-        }
-
-        // Verify the date matches the day of week
-        const booking = this.recurringBookings.find(b => b.id === recurringBookingId);
-        const selectedDate = new Date(dateToCancel);
-        const dayOfWeek = this.daysOfWeek[selectedDate.getDay()];
-
-        if (dayOfWeek !== booking.dayOfWeek) {
-            this.showNotification(`This date is not a ${booking.dayOfWeek}. Please select the correct day.`, 'error');
-            return;
-        }
-
-        await this.cancelRecurringInstance(recurringBookingId, dateToCancel);
+    showLoginSection() {
+        const loginSection = document.getElementById('loginSection');
+        const bookingSystem = document.getElementById('bookingSystem');
         
-        // Close modal and refresh
-        document.querySelector('.recurring-management-modal')?.remove();
+        if (loginSection) loginSection.style.display = 'block';
+        if (bookingSystem) bookingSystem.style.display = 'none';
+        
+        console.log('🔐 Showing login section');
     }
 
-    // Enhanced UI generation methods
     showBookingSystem() {
         const loginSection = document.getElementById('loginSection');
         const bookingSystem = document.getElementById('bookingSystem');
+        
         if (loginSection) loginSection.style.display = 'none';
         if (bookingSystem) bookingSystem.style.display = 'block';
 
@@ -651,18 +806,14 @@ class ImprovedClassroomBookingSystem {
         this.generateRecurringTimeSlots();
         this.generateClassroomTiles();
         this.generateRecurringClassroomTiles();
-    }
-
-    showLoginSection() {
-        const loginSection = document.getElementById('loginSection');
-        const bookingSystem = document.getElementById('bookingSystem');
-        if (loginSection) loginSection.style.display = 'block';
-        if (bookingSystem) bookingSystem.style.display = 'none';
+        
+        console.log('📚 Showing booking system');
     }
 
     updateUserInfo() {
         const nameElement = document.getElementById('currentUserName');
         const emailElement = document.getElementById('currentUserEmail');
+        
         if (this.currentUser && nameElement && emailElement) {
             const displayName = this.currentUser.displayName || this.currentUser.email.split('@')[0];
             nameElement.textContent = displayName;
@@ -679,6 +830,7 @@ class ImprovedClassroomBookingSystem {
 
         const oneTimeSection = document.getElementById('oneTimeBooking');
         const recurringSection = document.getElementById('recurringBooking');
+        
         if (oneTimeSection) {
             oneTimeSection.style.display = (type === 'one-time') ? 'block' : 'none';
         }
@@ -687,6 +839,7 @@ class ImprovedClassroomBookingSystem {
         }
 
         this.resetSelections();
+        console.log(`🔄 Switched to ${type} booking mode`);
     }
 
     resetSelections() {
@@ -1078,17 +1231,204 @@ class ImprovedClassroomBookingSystem {
         }
     }
 
+    // Enhanced booking display with individual cancellation options
+    updateBookingsDisplay() {
+        const bookingsList = document.getElementById('bookingsList');
+        if (!bookingsList) return;
+
+        if (this.allBookings.length === 0) {
+            bookingsList.innerHTML = '<div class="loading-bookings">No bookings found</div>';
+            return;
+        }
+
+        const today = this.formatDate(new Date());
+        const todaysBookings = this.allBookings.filter(booking => booking.date === today);
+
+        // Update count
+        const countElement = document.getElementById('todaysBookingsCount');
+        if (countElement) {
+            countElement.textContent = todaysBookings.length;
+        }
+
+        bookingsList.innerHTML = todaysBookings.map(booking => {
+            const isOwnBooking = booking.teacherId === this.currentUser?.uid;
+            return `
+                <div class="booking-item ${isOwnBooking ? 'own-booking' : ''}">
+                    <div class="booking-header">
+                        <div>
+                            <div class="booking-title">${booking.subject}</div>
+                            <div class="booking-badges">
+                                ${isOwnBooking ? '<span class="badge success">Your Booking</span>' : ''}
+                                <span class="badge secondary">One-time</span>
+                            </div>
+                        </div>
+                        ${isOwnBooking ? `
+                            <button class="btn-delete" onclick="classroomSystem.deleteBooking('${booking.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                    <div class="booking-details">
+                        <div><i class="fas fa-user"></i> ${booking.teacherName}</div>
+                        <div><i class="fas fa-door-open"></i> ${booking.classroom}</div>
+                        <div><i class="fas fa-clock"></i> ${booking.time}</div>
+                        <div><i class="fas fa-calendar"></i> ${booking.date}</div>
+                        ${booking.notes ? `<div><i class="fas fa-sticky-note"></i> ${booking.notes}</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Enhanced recurring bookings display with individual cancellation
+    updateRecurringBookingsDisplay() {
+        const recurringList = document.getElementById('recurringBookingsList');
+        if (!recurringList) return;
+
+        if (this.recurringBookings.length === 0) {
+            recurringList.innerHTML = '<div class="loading-bookings">No recurring bookings found</div>';
+            return;
+        }
+
+        recurringList.innerHTML = this.recurringBookings.map(booking => {
+            const isOwnBooking = booking.teacherId === this.currentUser?.uid;
+            const exceptions = booking.exceptions || [];
+            
+            return `
+                <div class="booking-item recurring-booking ${isOwnBooking ? 'own-booking' : ''}">
+                    <div class="booking-header">
+                        <div>
+                            <div class="booking-title">${booking.subject}</div>
+                            <div class="booking-badges">
+                                ${isOwnBooking ? '<span class="badge success">Your Booking</span>' : ''}
+                                <span class="badge warning">Recurring</span>
+                                ${exceptions.length > 0 ? `<span class="badge secondary">${exceptions.length} Cancelled</span>` : ''}
+                            </div>
+                        </div>
+                        ${isOwnBooking ? `
+                            <div style="display: flex; gap: 5px;">
+                                <button class="btn-delete btn-manage" onclick="classroomSystem.showRecurringManagement('${booking.id}')">
+                                    <i class="fas fa-cog"></i> Manage
+                                </button>
+                                <button class="btn-delete" onclick="classroomSystem.deleteRecurringBooking('${booking.id}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="booking-details">
+                        <div><i class="fas fa-user"></i> ${booking.teacherName}</div>
+                        <div><i class="fas fa-door-open"></i> ${booking.classroom}</div>
+                        <div><i class="fas fa-clock"></i> ${booking.time}</div>
+                        <div><i class="fas fa-calendar-alt"></i> Every ${booking.dayOfWeek}</div>
+                        ${booking.notes ? `<div><i class="fas fa-sticky-note"></i> ${booking.notes}</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Show recurring booking management modal
+    showRecurringManagement(recurringBookingId) {
+        const booking = this.recurringBookings.find(b => b.id === recurringBookingId);
+        if (!booking) return;
+
+        const modal = document.createElement('div');
+        modal.className = 'recurring-management-modal';
+        modal.innerHTML = `
+            <div class="modal-overlay" onclick="this.parentElement.remove()">
+                <div class="modal-content" onclick="event.stopPropagation()">
+                    <div class="modal-header">
+                        <h4>Manage Recurring Class: ${booking.subject}</h4>
+                        <button class="modal-close" onclick="this.closest('.recurring-management-modal').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p><strong>Schedule:</strong> Every ${booking.dayOfWeek} at ${booking.time}</p>
+                        <p><strong>Classroom:</strong> ${booking.classroom}</p>
+                        <div class="recurring-management-section">
+                            <h5>Cancel Individual Classes</h5>
+                            <div class="date-input-group">
+                                <input type="date" id="cancelDate" min="${new Date().toISOString().split('T')[0]}">
+                                <button class="btn-cancel-instance" onclick="classroomSystem.handleInstanceCancellation('${recurringBookingId}')">
+                                    Cancel This Date
+                                </button>
+                            </div>
+                        </div>
+                        ${booking.exceptions && booking.exceptions.length > 0 ? `
+                            <div class="recurring-management-section">
+                                <h5>Cancelled Classes</h5>
+                                <div class="cancelled-instances">
+                                    ${booking.exceptions.map(date => `
+                                        <div class="cancelled-instance">
+                                            <span>${date}</span>
+                                            <button class="btn-restore" onclick="classroomSystem.restoreRecurringInstance('${recurringBookingId}', '${date}')">
+                                                Restore
+                                            </button>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        setTimeout(() => modal.classList.add('show'), 10);
+    }
+
+    // Handle individual instance cancellation
+    async handleInstanceCancellation(recurringBookingId) {
+        const dateInput = document.getElementById('cancelDate');
+        const dateToCancel = dateInput?.value;
+
+        if (!dateToCancel) {
+            this.showNotification('Please select a date to cancel', 'error');
+            return;
+        }
+
+        // Verify the date matches the day of week
+        const booking = this.recurringBookings.find(b => b.id === recurringBookingId);
+        if (!booking) {
+            this.showNotification('Booking not found', 'error');
+            return;
+        }
+
+        const selectedDate = new Date(dateToCancel);
+        const dayOfWeek = this.daysOfWeek[selectedDate.getDay()];
+
+        if (dayOfWeek !== booking.dayOfWeek) {
+            this.showNotification(`This date is not a ${booking.dayOfWeek}. Please select the correct day.`, 'error');
+            return;
+        }
+
+        await this.cancelRecurringInstance(recurringBookingId, dateToCancel);
+        
+        // Close modal and refresh
+        const modal = document.querySelector('.recurring-management-modal');
+        if (modal) modal.remove();
+    }
+
     // Booking management methods
     async deleteBooking(bookingId) {
         if (!confirm('Are you sure you want to delete this booking?')) {
             return;
         }
 
+        if (!this.db) {
+            this.showNotification('Database not available', 'error');
+            return;
+        }
+
         try {
             await this.db.collection('bookings').doc(bookingId).delete();
             this.showNotification('Booking deleted successfully', 'success');
+            console.log(`✅ Deleted booking: ${bookingId}`);
         } catch (error) {
-            console.error('Error deleting booking:', error);
+            console.error('❌ Error deleting booking:', error);
             this.showNotification('Error deleting booking: ' + error.message, 'error');
         }
     }
@@ -1098,91 +1438,49 @@ class ImprovedClassroomBookingSystem {
             return;
         }
 
+        if (!this.db) {
+            this.showNotification('Database not available', 'error');
+            return;
+        }
+
         try {
             await this.db.collection('recurringBookings').doc(recurringBookingId).delete();
             this.showNotification('Recurring booking deleted successfully', 'success');
+            console.log(`✅ Deleted recurring booking: ${recurringBookingId}`);
         } catch (error) {
-            console.error('Error deleting recurring booking:', error);
+            console.error('❌ Error deleting recurring booking:', error);
             this.showNotification('Error deleting recurring booking: ' + error.message, 'error');
         }
     }
-
-    // Utility methods
-    togglePasswordVisibility() {
-        const passwordInput = document.getElementById('teacherPassword');
-        const toggleIcon = document.querySelector('#togglePassword i');
-        if (passwordInput && toggleIcon) {
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                toggleIcon.className = 'fas fa-eye-slash';
-            } else {
-                passwordInput.type = 'password';
-                toggleIcon.className = 'fas fa-eye';
-            }
-        }
-    }
-
-    showNotification(message, type = 'info') {
-        const container = document.getElementById('toastContainer') || this.createToastContainer();
-        const toast = document.createElement('div');
-        toast.className = `toast-notification ${type}`;
-        
-        const icons = {
-            success: 'fas fa-check-circle',
-            error: 'fas fa-exclamation-circle',
-            info: 'fas fa-info-circle'
-        };
-
-        toast.innerHTML = `
-            <div class="toast-header ${type}">
-                <i class="${icons[type]}"></i>
-                ${type.charAt(0).toUpperCase() + type.slice(1)}
-            </div>
-            <div class="toast-body">${message}</div>
-        `;
-
-        container.appendChild(toast);
-        setTimeout(() => toast.classList.add('show'), 100);
-
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => {
-                if (toast.parentNode) {
-                    toast.parentNode.removeChild(toast);
-                }
-            }, 300);
-        }, 5000);
-    }
-
-    createToastContainer() {
-        const container = document.createElement('div');
-        container.id = 'toastContainer';
-        container.className = 'toast-container';
-        document.body.appendChild(container);
-        return container;
-    }
-
-    getErrorMessage(errorCode) {
-        const messages = {
-            'auth/user-not-found': 'No account found with this email address',
-            'auth/wrong-password': 'Incorrect password',
-            'auth/invalid-email': 'Invalid email address',
-            'auth/too-many-requests': 'Too many failed attempts. Please try again later',
-            'auth/network-request-failed': 'Network error. Please check your connection'
-        };
-        return messages[errorCode] || 'Login failed. Please try again.';
-    }
 }
 
-// Initialize the system
+// Initialize the system with better error handling
 let classroomSystem;
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        classroomSystem = new ImprovedClassroomBookingSystem();
-    });
-} else {
-    classroomSystem = new ImprovedClassroomBookingSystem();
-}
 
-// Export for global access
-window.classroomSystem = classroomSystem;
+try {
+    console.log('🚀 Starting Classroom Booking System...');
+    classroomSystem = new ImprovedClassroomBookingSystem();
+    
+    // Make globally accessible for debugging and onclick handlers
+    window.classroomSystem = classroomSystem;
+    
+} catch (error) {
+    console.error('🚨 Critical error initializing system:', error);
+    
+    // Show user-friendly error
+    document.addEventListener('DOMContentLoaded', () => {
+        document.body.innerHTML = `
+            <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
+                <h1 style="color: #dc3545;">System Error</h1>
+                <p>Failed to initialize the classroom booking system.</p>
+                <p><strong>Error:</strong> ${error.message}</p>
+                <button onclick="location.reload()" style="background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 10px;">
+                    Reload Page
+                </button>
+                <button onclick="window.open('debug-console.html', '_blank')" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 10px;">
+                    Debug Console
+                </button>
+            </div>
+        `;
+    });
+}
