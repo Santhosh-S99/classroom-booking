@@ -38,16 +38,17 @@ class ImprovedClassroomBookingSystem {
         this.timeSlots = [
             '08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00',
             '12:00-13:00', '13:00-14:00', '14:00-15:00', '15:00-16:00',
-            '16:00-17:00', '17:00-18:00'
+            '16:00-17:00', '17:00-18:00', '18:00-19:00', '19:00-20:00', 
+            '20:00-21:00', '21:00-22:00', '22:00-23:00'
         ];
 
         this.classrooms = {
-            'classroom-1': { name: 'Classroom 1', capacity: 30 },
-            'classroom-2': { name: 'Classroom 2', capacity: 25 },
-            'classroom-3': { name: 'Classroom 3', capacity: 40 },
-            'classroom-4': { name: 'Classroom 4', capacity: 35 },
-            'classroom-5': { name: 'Classroom 5', capacity: 20 },
-            'classroom-6': { name: 'Classroom 6', capacity: 45 }
+            'classroom-1': { name: 'Classroom 1', capacity: 50 },
+            'classroom-2': { name: 'Classroom 2', capacity: 50 },
+            'classroom-3': { name: 'Classroom 3', capacity: 50 },
+            'classroom-4': { name: 'Classroom 4', capacity: 50 },
+            'classroom-5': { name: 'Classroom 5', capacity: 50 },
+            'classroom-6': { name: 'Classroom 6', capacity: 50 }
         };
 
         this.daysOfWeek = [
