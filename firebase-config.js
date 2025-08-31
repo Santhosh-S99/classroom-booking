@@ -17,7 +17,7 @@ const firebaseConfig = {
 const emailConfig = {
     Host: "smtp.gmail.com",
     Username: "santhoshstr385@gmail.com", // Your Gmail address
-    Password: "anwm pkan qpnm mugm", // Gmail App Password (not regular password)
+    Password: "jwxs ipgb eqpe zyeg", // Gmail App Password (not regular password)
     Port: 465,
     SecureToken: true
 };
