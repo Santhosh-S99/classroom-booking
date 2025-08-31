@@ -1,15 +1,7 @@
-/**
- * Enhanced Firebase Configuration with Formspree Integration
- * Version 3.2 - Formspree Email Service
- * 
- * Benefits over SMTP.js:
- * - More reliable than SMTP.js
- * - 1000 emails/month free (perfect for 50/day)
- * - No Gmail app password needed
- * - Works with all modern browsers
- */
+// Enhanced Firebase Configuration and Email Settings
+// Version 2.0 - Improved error handling and connectivity
 
-// Firebase Configuration (keep your existing config)
+// Firebase Configuration
 const firebaseConfig = {
     apiKey: "AIzaSyAoD2yRXAZplz61-xDFI1nRcHpg-vYl3hQ",
     authDomain: "classroom-booking-4e8f5.firebaseapp.com",
@@ -20,347 +12,319 @@ const firebaseConfig = {
     measurementId: "G-VE4PQ1TKEH"
 };
 
-// Formspree Configuration
-// REPLACE WITH YOUR ACTUAL FORMSPREE FORM ID after setup
+// Gmail Configuration for Email Notifications
+// REPLACE WITH YOUR ACTUAL GMAIL CREDENTIALS
 const emailConfig = {
-    formspreeEndpoint: "mzzagekk", // e.g., "xvgpkjqw"
-    fromEmail: "santhoshstr385@gmail.com",       // Your email as sender
-    maxRetries: 3,
-    retryDelay: 2000
+    Host: "smtp.gmail.com",
+    Username: "santhoshstr385@gmail.com", // Your Gmail address
+    Password: "anwm pkan qpnm mugm", // Gmail App Password (not regular password)
+    Port: 587,
+    SecureToken: true
 };
 
 // List of all teacher emails for notifications
+// REPLACE WITH ACTUAL TEACHER EMAIL ADDRESSES
 const teacherEmails = [
     "santhosh.sak99@gmail.com",
     "postinbox385@gmail.com"
 ];
 
-// Initialize Firebase
+// Initialize Firebase with error handling
 try {
     firebase.initializeApp(firebaseConfig);
-    console.log('✅ Firebase initialized successfully');
+    console.log('Firebase initialized successfully');
 } catch (error) {
-    console.error('❌ Firebase initialization error:', error);
+    console.error('Firebase initialization error:', error);
+    // Show user-friendly error message
+    document.addEventListener('DOMContentLoaded', () => {
+        showFirebaseError('Firebase initialization failed. Please check your configuration.');
+    });
 }
 
 // Initialize Firebase services
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// Configure Firestore settings
+// Configure Firestore settings for better performance
 db.enableNetwork().catch((error) => {
-    console.error('❌ Firestore network error:', error);
+    console.error('Firestore network error:', error);
 });
-
-// Enhanced Formspree email notification function
-window.sendEmailNotification = async function(bookingData, isRecurring = false) {
-    console.log('📧 Starting Formspree email notification...', bookingData);
-    
-    // Check if Formspree is configured
-    if (!emailConfig.formspreeEndpoint || emailConfig.formspreeEndpoint === "YOUR_FORMSPREE_FORM_ID") {
-        console.error('❌ Formspree not configured. Please update emailConfig in firebase-config.js');
-        return { 
-            success: false, 
-            error: 'Email service not configured',
-            details: 'Please set up Formspree endpoint'
-        };
-    }
-
-    // Filter out the current user's email
-    const emailList = teacherEmails.filter(email => 
-        email !== bookingData.teacherEmail && 
-        email.trim() !== ''
-    );
-    
-    if (emailList.length === 0) {
-        console.log('ℹ️ No other teachers to notify');
-        return { success: true, message: 'No other teachers to notify' };
-    }
-
-    // Prepare email content
-    const subject = isRecurring
-        ? `🔔 New Weekly Recurring Class: ${bookingData.classroom} - ${bookingData.subject}`
-        : `🔔 New Booking: ${bookingData.classroom} - ${bookingData.subject}`;
-
-    const emailContent = isRecurring
-        ? createRecurringEmailContent(bookingData)
-        : createOneTimeEmailContent(bookingData);
-
-    console.log(`📬 Sending notifications to ${emailList.length} teachers via Formspree`);
-
-    // Send emails to all recipients
-    const emailResults = [];
-    
-    for (const email of emailList) {
-        const result = await sendFormspreeEmail(email, subject, emailContent, bookingData);
-        emailResults.push({ email, ...result });
-    }
-
-    // Analyze results
-    const successful = emailResults.filter(r => r.success);
-    const failed = emailResults.filter(r => !r.success);
-
-    console.log(`📊 Email Results: ${successful.length}/${emailList.length} successful`);
-    
-    if (failed.length > 0) {
-        console.warn('⚠️ Some emails failed:', failed.map(f => ({ email: f.email, error: f.error })));
-    }
-
-    return {
-        success: successful.length > 0,
-        total: emailList.length,
-        successful: successful.length,
-        failed: failed.length,
-        results: emailResults,
-        service: 'Formspree'
-    };
-};
-
-// Send email via Formspree with retry logic
-async function sendFormspreeEmail(toEmail, subject, content, bookingData, attempt = 1) {
-    const maxAttempts = emailConfig.maxRetries;
-    const formspreeUrl = `https://formspree.io/f/${emailConfig.formspreeEndpoint}`;
-    
-    console.log(`📤 Sending Formspree email to ${toEmail} (attempt ${attempt}/${maxAttempts})`);
-    
-    try {
-        const emailPayload = {
-            _replyto: emailConfig.fromEmail,
-            _subject: subject,
-            email: toEmail,
-            name: toEmail.split('@')[0], // Use email prefix as name
-            message: content,
-            
-            // Additional data for better organization
-            booking_type: bookingData.type || 'one-time',
-            teacher_name: bookingData.teacherName,
-            classroom: bookingData.classroom,
-            subject_taught: bookingData.subject,
-            date: bookingData.date || bookingData.dayOfWeek,
-            time: bookingData.time,
-            
-            // Formspree hidden fields
-            _next: window.location.origin, // Redirect back to our site
-            _cc: emailConfig.fromEmail     // CC the sender
-        };
-
-        const response = await fetch(formspreeUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(emailPayload)
-        });
-
-        const responseData = await response.json();
-
-        if (response.ok) {
-            console.log(`✅ Formspree email sent successfully to ${toEmail}`);
-            return { 
-                success: true, 
-                response: responseData,
-                attempt: attempt,
-                service: 'Formspree'
-            };
-        } else {
-            throw new Error(`Formspree error: ${responseData.error || response.statusText}`);
-        }
-
-    } catch (error) {
-        console.error(`❌ Formspree email failed to ${toEmail} (attempt ${attempt}):`, error.message);
-        
-        if (attempt < maxAttempts) {
-            console.log(`🔄 Retrying Formspree email to ${toEmail} in ${emailConfig.retryDelay}ms...`);
-            await new Promise(resolve => setTimeout(resolve, emailConfig.retryDelay));
-            return sendFormspreeEmail(toEmail, subject, content, bookingData, attempt + 1);
-        } else {
-            return { 
-                success: false, 
-                error: error.message,
-                attempts: attempt,
-                finalAttempt: true,
-                service: 'Formspree'
-            };
-        }
-    }
-}
-
-// Create text email content for one-time bookings (Formspree works best with plain text)
-function createOneTimeEmailContent(bookingData) {
-    return `
-🔔 NEW CLASSROOM BOOKING NOTIFICATION
-
-A new class has been scheduled in the Enhanced Classroom Booking System.
-
-📋 BOOKING DETAILS:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-👨🏫 Teacher: ${bookingData.teacherName}
-📧 Email: ${bookingData.teacherEmail}
-📚 Subject: ${bookingData.subject}
-🏫 Classroom: ${bookingData.classroom}
-📅 Date: ${formatDateForEmail(bookingData.date)}
-🕐 Time: ${bookingData.time}
-${bookingData.notes ? `📝 Notes: ${bookingData.notes}` : ''}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-ℹ️  NOTICE: This classroom is now booked for the specified time. 
-Please check the booking system for any scheduling needs.
-
-📱 Access the booking system at: ${window.location.origin}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Enhanced Classroom Booking System
-Automated notification • ${new Date().toLocaleString()}
-`.trim();
-}
-
-// Create text email content for recurring bookings
-function createRecurringEmailContent(bookingData) {
-    return `
-🔔 NEW WEEKLY RECURRING CLASS NOTIFICATION
-
-A new weekly recurring class has been scheduled in the Enhanced Classroom Booking System.
-
-📋 RECURRING CLASS DETAILS:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-👨🏫 Teacher: ${bookingData.teacherName}
-📧 Email: ${bookingData.teacherEmail}
-📚 Subject: ${bookingData.subject}
-🏫 Classroom: ${bookingData.classroom}
-📅 Schedule: Every ${bookingData.dayOfWeek}
-🕐 Time: ${bookingData.time}
-${bookingData.notes ? `📝 Notes: ${bookingData.notes}` : ''}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-⏰ DURATION: This recurring class will run for 52 weeks (1 year).
-This time slot is now blocked for the entire duration.
-
-📱 Access the booking system at: ${window.location.origin}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Enhanced Classroom Booking System
-Automated notification • ${new Date().toLocaleString()}
-`.trim();
-}
-
-// Format date for email display
-function formatDateForEmail(dateStr) {
-    try {
-        const date = new Date(dateStr);
-        const options = { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-        };
-        return date.toLocaleDateString('en-US', options);
-    } catch (error) {
-        return dateStr;
-    }
-}
-
-// Function to test Formspree configuration
-window.testFormspreeConfiguration = async function() {
-    console.log('🧪 Testing Formspree configuration...');
-    
-    if (!emailConfig.formspreeEndpoint || emailConfig.formspreeEndpoint === "YOUR_FORMSPREE_FORM_ID") {
-        return { 
-            success: false, 
-            error: 'Formspree not configured',
-            details: 'Please set up your Formspree form and update the endpoint'
-        };
-    }
-
-    // Test with current user's email
-    const testData = {
-        teacherName: 'Test Teacher',
-        teacherEmail: 'test@example.com',
-        subject: 'Test Booking Notification',
-        classroom: 'Test Classroom 1',
-        date: new Date().toISOString().split('T')[0],
-        time: '10:00-11:00',
-        notes: 'This is a test notification to verify email service is working correctly.'
-    };
-
-    try {
-        const testEmail = auth.currentUser?.email || emailConfig.fromEmail;
-        const result = await sendFormspreeEmail(
-            testEmail,
-            '🧪 Test Email - Classroom Booking System',
-            createOneTimeEmailContent(testData),
-            testData
-        );
-        
-        console.log('📧 Formspree test result:', result);
-        return {
-            success: result.success,
-            result: result,
-            service: 'Formspree',
-            testEmail: testEmail
-        };
-    } catch (error) {
-        console.error('📧 Formspree test failed:', error);
-        return { 
-            success: false, 
-            error: error.message,
-            service: 'Formspree'
-        };
-    }
-};
 
 // Enhanced connection monitoring
 let connectionStatus = 'connecting';
+let connectionAttempts = 0;
+const maxConnectionAttempts = 5;
 
 function updateConnectionStatus(status) {
     connectionStatus = status;
     const indicator = document.getElementById('connectionStatus');
     if (!indicator) return;
 
+    // Clear existing content
+    indicator.innerHTML = '';
+    
+    // Create status icon and text
+    const statusIcon = document.createElement('i');
+    const statusText = document.createElement('span');
+    
     indicator.className = 'realtime-indicator ' + status;
     
     switch(status) {
         case 'connected':
-            indicator.innerHTML = '<i class="fas fa-wifi"></i> <span>Connected</span>';
+            statusIcon.className = 'fas fa-wifi';
+            statusText.textContent = 'Connected';
+            connectionAttempts = 0; // Reset attempts on successful connection
             break;
         case 'connecting':
-            indicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Connecting...</span>';
+            statusIcon.className = 'fas fa-spinner fa-spin';
+            statusText.textContent = 'Connecting...';
             break;
         case 'disconnected':
-            indicator.innerHTML = '<i class="fas fa-wifi"></i> <span>Disconnected</span>';
+            statusIcon.className = 'fas fa-wifi';
+            statusText.textContent = 'Disconnected';
+            break;
+        case 'error':
+            statusIcon.className = 'fas fa-exclamation-triangle';
+            statusText.textContent = 'Connection Error';
             break;
     }
+    
+    indicator.appendChild(statusIcon);
+    indicator.appendChild(statusText);
 }
 
-// Monitor authentication state
+// Enhanced authentication state monitoring
 auth.onAuthStateChanged((user) => {
     if (user) {
         updateConnectionStatus('connected');
-        console.log('✅ User authenticated:', user.email);
+        console.log('User authenticated:', user.email);
+        
+        // Test Firestore connection
+        testFirestoreConnection();
     } else {
         updateConnectionStatus('disconnected');
-        console.log('ℹ️ User not authenticated');
+        console.log('User not authenticated');
     }
 });
 
-// Initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    updateConnectionStatus('connecting');
-    
-    setTimeout(() => {
-        if (auth.currentUser) {
-            updateConnectionStatus('connected');
+// Test Firestore connection
+async function testFirestoreConnection() {
+    try {
+        // Try to read from a test collection
+        await db.collection('test').limit(1).get();
+        updateConnectionStatus('connected');
+    } catch (error) {
+        console.error('Firestore connection test failed:', error);
+        updateConnectionStatus('error');
+        
+        // Retry connection after delay
+        if (connectionAttempts < maxConnectionAttempts) {
+            connectionAttempts++;
+            setTimeout(() => {
+                console.log(`Retrying connection... Attempt ${connectionAttempts}/${maxConnectionAttempts}`);
+                testFirestoreConnection();
+            }, 2000 * connectionAttempts); // Exponential backoff
         }
-    }, 1000);
+    }
+}
+
+// Enhanced email notification function with better error handling
+window.sendEmailNotification = async function(bookingData, isRecurring = false) {
+    // Filter out the current user's email
+    const emailList = teacherEmails.filter(email => 
+        email !== bookingData.teacherEmail && 
+        email.trim() !== '' // Ensure email is not empty
+    );
+    
+    if (emailList.length === 0) {
+        console.log('No other teachers to notify');
+        return { success: true, message: 'No other teachers to notify' };
+    }
+
+    const subject = isRecurring
+        ? `🔔 New Weekly Recurring Class: ${bookingData.classroom}`
+        : `🔔 New Booking: ${bookingData.classroom}`;
+
+    const bodyText = isRecurring
+        ? `A new weekly recurring class has been scheduled:
+
+👨🏫 Teacher: ${bookingData.teacherName} (${bookingData.teacherEmail})
+📚 Subject: ${bookingData.subject}
+🏫 Classroom: ${bookingData.classroom}
+📅 Day: Every ${bookingData.dayOfWeek}
+🕐 Time: ${bookingData.time}
+📝 Notes: ${bookingData.notes || 'None'}
+
+⏰ Duration: 52 weeks (1 year)
+This time slot is now blocked for the next year.
+
+You can manage your bookings at: ${window.location.origin}
+
+---
+Enhanced Classroom Booking System
+Automated notification system`
+
+        : `A new classroom booking has been made:
+
+👨🏫 Teacher: ${bookingData.teacherName} (${bookingData.teacherEmail})
+📚 Subject: ${bookingData.subject}
+🏫 Classroom: ${bookingData.classroom}
+📅 Date: ${bookingData.date}
+🕐 Time: ${bookingData.time}
+📝 Notes: ${bookingData.notes || 'None'}
+
+Please check the booking system for details at: ${window.location.origin}
+
+---
+Enhanced Classroom Booking System
+Automated notification system`;
+
+    const emailPromises = emailList.map(async (email) => {
+        try {
+            const result = await Email.send({
+                Host: emailConfig.Host,
+                Username: emailConfig.Username,
+                Password: emailConfig.Password,
+                Port: emailConfig.Port,
+                To: email.trim(),
+                From: emailConfig.Username,
+                Subject: subject,
+                Body: bodyText
+            });
+            
+            console.log(`Email sent successfully to ${email}:`, result);
+            return { email, success: true, result };
+        } catch (error) {
+            console.error(`Failed to send email to ${email}:`, error);
+            return { email, success: false, error: error.message };
+        }
+    });
+
+    try {
+        const results = await Promise.allSettled(emailPromises);
+        const successCount = results.filter(r => 
+            r.status === 'fulfilled' && r.value.success
+        ).length;
+        
+        console.log(`Email notifications sent: ${successCount}/${emailList.length} successful`);
+        
+        return {
+            success: successCount > 0,
+            total: emailList.length,
+            successful: successCount,
+            failed: emailList.length - successCount
+        };
+    } catch (error) {
+        console.error('Error sending email notifications:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+// Function to show Firebase errors to users
+function showFirebaseError(message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'firebase-error-banner';
+    errorDiv.innerHTML = `
+        <div class="error-content">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="error-close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    
+    // Add error banner styles
+    errorDiv.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+        padding: 15px;
+        z-index: 9999;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    `;
+    
+    const errorContent = errorDiv.querySelector('.error-content');
+    errorContent.style.cssText = `
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        max-width: 1200px;
+        margin: 0 auto;
+        gap: 15px;
+    `;
+    
+    const errorClose = errorDiv.querySelector('.error-close');
+    errorClose.style.cssText = `
+        background: none;
+        border: none;
+        color: white;
+        font-size: 1.2em;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 3px;
+        transition: background 0.3s ease;
+    `;
+    
+    errorClose.addEventListener('mouseover', () => {
+        errorClose.style.background = 'rgba(255,255,255,0.2)';
+    });
+    
+    errorClose.addEventListener('mouseout', () => {
+        errorClose.style.background = 'none';
+    });
+    
+    document.body.insertBefore(errorDiv, document.body.firstChild);
+    
+    // Auto-remove after 10 seconds
+    setTimeout(() => {
+        if (errorDiv.parentNode) {
+            errorDiv.remove();
+        }
+    }, 10000);
+}
+
+// Enhanced network status monitoring
+window.addEventListener('online', () => {
+    console.log('Network connection restored');
+    updateConnectionStatus('connecting');
+    testFirestoreConnection();
 });
 
-// Export for use in other files
+window.addEventListener('offline', () => {
+    console.log('Network connection lost');
+    updateConnectionStatus('disconnected');
+});
+
+// Periodic connection health check (every 30 seconds)
+setInterval(() => {
+    if (connectionStatus === 'connected') {
+        testFirestoreConnection();
+    }
+}, 30000);
+
+// Export enhanced configuration for use in other files
 window.firebaseAuth = auth;
 window.firebaseDb = db;
 window.emailConfig = emailConfig;
 window.teacherEmails = teacherEmails;
+window.updateConnectionStatus = updateConnectionStatus;
 
-console.log('✅ Enhanced Firebase configuration with Formspree integration loaded');
-console.log('📧 Email service: Formspree');
-console.log(`👥 Configured for ${teacherEmails.length} teachers`);
-console.log('🔧 Formspree endpoint:', emailConfig.formspreeEndpoint === "YOUR_FORMSPREE_FORM_ID" ? "⚠️ NOT CONFIGURED" : "✅ Ready");
+console.log('Enhanced Firebase configuration loaded successfully');
+console.log('Email configuration initialized');
+console.log(`Configured for ${teacherEmails.length} teachers`);
+
+// Initialize connection status check when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    updateConnectionStatus('connecting');
+    
+    // Initial connection test
+    setTimeout(() => {
+        if (firebase.auth().currentUser) {
+            testFirestoreConnection();
+        }
+    }, 1000);
+});
