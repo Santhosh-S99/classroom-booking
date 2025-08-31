@@ -18,7 +18,7 @@ const emailConfig = {
     Host: "smtp.gmail.com",
     Username: "santhoshstr385@gmail.com", // Your Gmail address
     Password: "anwm pkan qpnm mugm", // Gmail App Password (not regular password)
-    Port: 587,
+    Port: 465,
     SecureToken: true
 };
 
