@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Console - Classroom Booking System</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .debug-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            background: #f8f9fa;
+        }
+        
+        .section h3 {
+            color: #ff6b35;
+            margin-bottom: 15px;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+        }
+        
+        .status-ok { border-left: 4px solid #28a745; }
+        .status-error { border-left: 4px solid #dc3545; }
+        .status-warning { border-left: 4px solid #ffc107; }
+        
+        .console-output {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        .button {
+            background: linear-gradient(135deg, #ff6b35, #f7931e);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .button:hover {
+            transform: translateY(-1px);
+        }
+        
+        .test-form {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .alert-info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        .alert-success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .alert-danger { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="debug-container">
+        <div class="header">
+            <h1><i class="fas fa-bug"></i> Debug Console</h1>
+            <p>Troubleshoot your Classroom Booking System</p>
+        </div>
+
+        <div class="alert alert-info">
+            <strong><i class="fas fa-info-circle"></i> Debug Steps:</strong>
+            This page will help you identify and fix login and JavaScript issues. Follow each section in order.
+        </div>
+
+        <div class="section">
+            <h3><i class="fas fa-file-code"></i> File Loading Status</h3>
+            <div id="fileStatus">
+                <div class="status-item status-warning">
+                    <span>Checking file loading...</span>
+                </div>
+            </div>
+            <button class="button" onclick="checkFiles()">
+                <i class="fas fa-refresh"></i> Recheck Files
+            </button>
+        </div>
+
+        <div class="section">
+            <h3><i class="fas fa-database"></i> Firebase Connection</h3>
+            <div id="firebaseStatus">
+                <div class="status-item status-warning">
+                    <span>Checking Firebase connection...</span>
+                </div>
+            </div>
+            <button class="button" onclick="testFirebase()">
+                <i class="fas fa-cloud"></i> Test Firebase
+            </button>
+        </div>
+
+        <div class="section">
+            <h3><i class="fas fa-sign-in-alt"></i> Login Test</h3>
+            <div id="loginStatus">
+                <div class="status-item status-warning">
+                    <span>Ready to test login functionality</span>
+                </div>
+            </div>
+            
+            <div class="test-form">
+                <div class="form-group">
+                    <label for="testEmail">Test Email:</label>
+                    <input type="email" id="testEmail" placeholder="Enter the email you added to Firebase Auth">
+                </div>
+                <div class="form-group">
+                    <label for="testPassword">Test Password:</label>
+                    <div style="position: relative;">
+                        <input type="password" id="testPassword" placeholder="Enter the password">
+                        <button type="button" onclick="toggleTestPassword()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer;">
+                            <i class="fas fa-eye" id="testPasswordIcon"></i>
+                        </button>
+                    </div>
+                </div>
+                <button class="button" onclick="testLogin()">
+                    <i class="fas fa-test-tube"></i> Test Login
+                </button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3><i class="fas fa-eye"></i> Password Toggle Test</h3>
+            <div id="passwordToggleStatus">
+                <div class="status-item status-warning">
+                    <span>Ready to test password toggle</span>
+                </div>
+            </div>
+            <button class="button" onclick="testPasswordToggle()">
+                <i class="fas fa-eye-slash"></i> Test Password Toggle
+            </button>
+        </div>
+
+        <div class="section">
+            <h3><i class="fas fa-terminal"></i> Console Output</h3>
+            <div id="consoleOutput" class="console-output">
+                Console initialized. Waiting for tests...\n
+            </div>
+            <button class="button" onclick="clearConsole()">
+                <i class="fas fa-trash"></i> Clear Console
+            </button>
+            <button class="button" onclick="exportLogs()">
+                <i class="fas fa-download"></i> Export Logs
+            </button>
+        </div>
+
+        <div class="section">
+            <h3><i class="fas fa-tools"></i> Quick Fixes</h3>
+            <button class="button" onclick="runAllTests()">
+                <i class="fas fa-play"></i> Run All Tests
+            </button>
+            <button class="button" onclick="checkGitHubPages()">
+                <i class="fas fa-github"></i> Check GitHub Pages Setup
+            </button>
+            <button class="button" onclick="generateFixedFiles()">
+                <i class="fas fa-wrench"></i> Generate Fixed Files
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let logs = [];
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${type.toUpperCase()}: ${message}`;
+            logs.push(logEntry);
+            
+            const consoleOutput = document.getElementById('consoleOutput');
+            consoleOutput.textContent += logEntry + '\n';
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+            
+            console.log(logEntry);
+        }
+
+        function updateStatus(elementId, status, message) {
+            const element = document.getElementById(elementId);
+            const statusClass = status === 'ok' ? 'status-ok' : status === 'error' ? 'status-error' : 'status-warning';
+            element.innerHTML = `<div class="status-item ${statusClass}"><span>${message}</span></div>`;
+        }
+
+        async function checkFiles() {
+            log('Checking file loading status...');
+            
+            const files = [
+                'firebase-config.js',
+                'classroom-booking.js',
+                'styles.css'
+            ];
+
+            let allFilesOk = true;
+            let statusHtml = '';
+
+            for (const file of files) {
+                try {
+                    const response = await fetch(file, { method: 'HEAD' });
+                    if (response.ok) {
+                        statusHtml += `<div class="status-item status-ok"><span>✅ ${file} - Loaded successfully</span></div>`;
+                        log(`${file} loaded successfully`);
+                    } else {
+                        statusHtml += `<div class="status-item status-error"><span>❌ ${file} - HTTP ${response.status}</span></div>`;
+                        log(`${file} failed to load - HTTP ${response.status}`, 'error');
+                        allFilesOk = false;
+                    }
+                } catch (error) {
+                    statusHtml += `<div class="status-item status-error"><span>❌ ${file} - ${error.message}</span></div>`;
+                    log(`${file} failed to load - ${error.message}`, 'error');
+                    allFilesOk = false;
+                }
+            }
+
+            // Check if scripts are actually loaded
+            if (typeof firebase === 'undefined') {
+                statusHtml += `<div class="status-item status-error"><span>❌ Firebase SDK not loaded</span></div>`;
+                log('Firebase SDK not loaded', 'error');
+                allFilesOk = false;
+            } else {
+                statusHtml += `<div class="status-item status-ok"><span>✅ Firebase SDK loaded</span></div>`;
+                log('Firebase SDK loaded');
+            }
+
+            if (typeof classroomSystem === 'undefined') {
+                statusHtml += `<div class="status-item status-error"><span>❌ Classroom System not initialized</span></div>`;
+                log('Classroom System not initialized', 'error');
+                allFilesOk = false;
+            } else {
+                statusHtml += `<div class="status-item status-ok"><span>✅ Classroom System initialized</span></div>`;
+                log('Classroom System initialized');
+            }
+
+            document.getElementById('fileStatus').innerHTML = statusHtml;
+            
+            if (!allFilesOk) {
+                log('File loading issues detected. Check file paths and GitHub Pages setup.', 'error');
+            }
+        }
+
+        async function testFirebase() {
+            log('Testing Firebase connection...');
+            
+            try {
+                if (typeof firebase === 'undefined') {
+                    throw new Error('Firebase SDK not loaded');
+                }
+
+                // Check if config is loaded
+                if (typeof firebaseConfig === 'undefined') {
+                    throw new Error('Firebase config not found. Check firebase-config.js');
+                }
+
+                log('Firebase config found');
+                
+                // Test auth service
+                const auth = firebase.auth();
+                if (auth) {
+                    updateStatus('firebaseStatus', 'ok', '✅ Firebase Auth service available');
+                    log('Firebase Auth service available');
+                } else {
+                    throw new Error('Firebase Auth service not available');
+                }
+
+                // Test Firestore
+                const db = firebase.firestore();
+                if (db) {
+                    log('Firebase Firestore service available');
+                    
+                    // Try to connect
+                    await db.collection('test').limit(1).get();
+                    updateStatus('firebaseStatus', 'ok', '✅ Firebase connected successfully');
+                    log('Firebase Firestore connected successfully');
+                } else {
+                    throw new Error('Firebase Firestore service not available');
+                }
+
+            } catch (error) {
+                updateStatus('firebaseStatus', 'error', `❌ Firebase Error: ${error.message}`);
+                log(`Firebase connection failed: ${error.message}`, 'error');
+                
+                if (error.message.includes('config')) {
+                    log('Make sure firebase-config.js is properly loaded and contains valid configuration', 'error');
+                }
+            }
+        }
+
+        async function testLogin() {
+            const email = document.getElementById('testEmail').value.trim();
+            const password = document.getElementById('testPassword').value;
+
+            if (!email || !password) {
+                updateStatus('loginStatus', 'error', '❌ Please enter email and password');
+                log('Email and password required for login test', 'error');
+                return;
+            }
+
+            log(`Testing login with email: ${email}`);
+
+            try {
+                if (typeof firebase === 'undefined') {
+                    throw new Error('Firebase not loaded');
+                }
+
+                const auth = firebase.auth();
+                
+                // Clear any existing user
+                if (auth.currentUser) {
+                    await auth.signOut();
+                    log('Signed out existing user');
+                }
+
+                // Try to sign in
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                
+                if (userCredential.user) {
+                    updateStatus('loginStatus', 'ok', `✅ Login successful! User: ${userCredential.user.email}`);
+                    log(`Login successful for ${userCredential.user.email}`);
+                    
+                    // Test logout
+                    await auth.signOut();
+                    log('Logout test successful');
+                } else {
+                    throw new Error('No user returned from login');
+                }
+
+            } catch (error) {
+                updateStatus('loginStatus', 'error', `❌ Login failed: ${error.message}`);
+                log(`Login failed: ${error.message}`, 'error');
+                
+                if (error.code === 'auth/user-not-found') {
+                    log('User not found. Make sure you created this account in Firebase Authentication console', 'error');
+                } else if (error.code === 'auth/wrong-password') {
+                    log('Wrong password. Check the password in Firebase Authentication console', 'error');
+                } else if (error.code === 'auth/invalid-email') {
+                    log('Invalid email format', 'error');
+                }
+            }
+        }
+
+        function testPasswordToggle() {
+            log('Testing password toggle functionality...');
+            
+            try {
+                const passwordInput = document.getElementById('testPassword');
+                const icon = document.getElementById('testPasswordIcon');
+                
+                if (!passwordInput || !icon) {
+                    throw new Error('Password toggle elements not found');
+                }
+
+                // Test toggle functionality
+                const originalType = passwordInput.type;
+                
+                if (originalType === 'password') {
+                    passwordInput.type = 'text';
+                    icon.className = 'fas fa-eye-slash';
+                    updateStatus('passwordToggleStatus', 'ok', '✅ Password toggle working - showing password');
+                    log('Password toggle test 1/2: Show password - OK');
+                    
+                    setTimeout(() => {
+                        passwordInput.type = 'password';
+                        icon.className = 'fas fa-eye';
+                        updateStatus('passwordToggleStatus', 'ok', '✅ Password toggle working - hiding password');
+                        log('Password toggle test 2/2: Hide password - OK');
+                    }, 2000);
+                } else {
+                    passwordInput.type = 'password';
+                    icon.className = 'fas fa-eye';
+                    updateStatus('passwordToggleStatus', 'ok', '✅ Password toggle working');
+                    log('Password toggle working');
+                }
+
+            } catch (error) {
+                updateStatus('passwordToggleStatus', 'error', `❌ Password toggle failed: ${error.message}`);
+                log(`Password toggle test failed: ${error.message}`, 'error');
+            }
+        }
+
+        function toggleTestPassword() {
+            const passwordInput = document.getElementById('testPassword');
+            const icon = document.getElementById('testPasswordIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                passwordInput.type = 'password';
+                icon.className = 'fas fa-eye';
+            }
+        }
+
+        async function runAllTests() {
+            log('Running all diagnostic tests...');
+            
+            await checkFiles();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testFirebase();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            testPasswordToggle();
+            
+            log('All tests completed. Check results above.');
+        }
+
+        function checkGitHubPages() {
+            log('Checking GitHub Pages setup...');
+            
+            const url = window.location.href;
+            log(`Current URL: ${url}`);
+            
+            if (url.includes('github.io') || url.includes('githubusercontent.com')) {
+                log('✅ Running on GitHub Pages');
+                
+                if (url.startsWith('https://')) {
+                    log('✅ Using HTTPS (required for Firebase)');
+                } else {
+                    log('❌ Not using HTTPS - Firebase requires HTTPS', 'error');
+                }
+                
+                // Check if it's the main page or in a subfolder
+                if (url.includes('/index.html') || url.endsWith('/')) {
+                    log('✅ Accessing index page correctly');
+                } else {
+                    log('⚠️ Make sure you\'re accessing the main index.html page', 'warning');
+                }
+                
+            } else {
+                log('ℹ️ Not running on GitHub Pages - using local/custom server');
+            }
+            
+            // Check if running locally
+            if (url.includes('localhost') || url.includes('127.0.0.1') || url.includes('file://')) {
+                log('⚠️ Running locally - Firebase may have CORS issues', 'warning');
+                log('For local testing, use a local server (Live Server, Python HTTP server, etc.)', 'warning');
+            }
+        }
+
+        function generateFixedFiles() {
+            log('Generating diagnostic information for fixes...');
+            
+            const diagnostics = {
+                timestamp: new Date().toISOString(),
+                url: window.location.href,
+                userAgent: navigator.userAgent,
+                firebaseLoaded: typeof firebase !== 'undefined',
+                classroomSystemLoaded: typeof classroomSystem !== 'undefined',
+                configLoaded: typeof firebaseConfig !== 'undefined',
+                logs: logs
+            };
+            
+            const blob = new Blob([JSON.stringify(diagnostics, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'classroom-booking-debug.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            log('Debug information downloaded as classroom-booking-debug.json');
+        }
+
+        function clearConsole() {
+            document.getElementById('consoleOutput').textContent = 'Console cleared.\n';
+            logs = [];
+        }
+
+        function exportLogs() {
+            const logContent = logs.join('\n');
+            const blob = new Blob([logContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `debug-logs-${new Date().toISOString().split('T')[0]}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            log('Debug logs exported');
+        }
+
+        // Auto-run basic checks when page loads
+        window.addEventListener('load', () => {
+            log('Debug console loaded');
+            setTimeout(checkFiles, 1000);
+        });
+
+        // Try to load Firebase and other scripts
+        const scripts = [
+            'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js',
+            'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js',
+            'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js',
+            'firebase-config.js',
+            'classroom-booking.js'
+        ];
+
+        scripts.forEach((src, index) => {
+            const script = document.createElement('script');
+            script.src = src;
+            script.onload = () => log(`Loaded: ${src}`);
+            script.onerror = () => log(`Failed to load: ${src}`, 'error');
+            document.head.appendChild(script);
+        });
+    </script>
+</body>
+</html>
